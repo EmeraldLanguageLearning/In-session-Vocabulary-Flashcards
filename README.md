@@ -31,11 +31,15 @@ On a deck, choose **Download ▾ › Share PDF link** (or **Share PDF link** und
 
 ## Teacher area (PIN)
 
+**Privacy:** the public sheet and the site never hold learner information. Decks are public, so keep learners' names out of deck titles, descriptions and cards.
+
 **Teachers** in the menu opens a PIN pad (same trainer PIN as the Emerald-web trainer page). Inside:
 
 - **Session deck:** type words, or paste a list (`word - meaning | example`, or columns copied from Excel/Sheets), or start from an existing deck. Save creates a new tab in the sheet and a row in Contents (hidden from the home page unless ticked), then opens the share panel.
-- **Learner pack:** a learner's name, an optional message and a choice of decks. Saved in the `Packs` tab. The learner gets `…/?pack=<id>`: their decks to study online or download as PDFs (one deck, or everything in one PDF). Editing a pack keeps the same link.
-- **Saved packs:** list of packs with Share and Edit.
+- **New pack:** choose *One learner* (private link) or *Everyone* (listed on the main page under **Flash card packs**, grouped by category: General, Aviation, Grammar, Verbs, Business English, Pronunciation or your own).
+  - Learner packs (learner's name, message) are stored in a separate **private** spreadsheet, *Emerald Flashcards – Learner packs (private)*, that only the owner can open. The learner's link `…/?pack=<id>` asks the save script for the pack by its code; the reply never contains the learner's name.
+  - Public packs are stored in the public sheet's `Packs` tab (Pack ID, title, category, description, decks): no learner information.
+- **Saved packs:** every pack (public and private) with Share and Edit, loaded through the save script after the PIN check.
 
 The PIN on the page only keeps learners out of the menu. The save script checks the PIN again and blocks saving for 4 hours after 8 wrong PINs.
 

@@ -167,7 +167,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .form label.chk input{width:auto;margin:0;accent-color:var(--emerald)}
 .form label.chk{flex-basis:100%}
 .form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl{border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-weight:400;color:var(--text-strong);background:#fff;margin-top:4px;width:100%}
-.form textarea{min-height:64px;resize:vertical}
+.form textarea{min-height:64px;resize:vertical;font-family:inherit;font-size:1rem}
 .form input:focus,.form select:focus,.form textarea:focus,.ed input:focus{outline:2px solid var(--emerald-soft);border-color:var(--emerald)}
 .ed{width:100%;border-collapse:collapse}
 .ed th{text-align:left;font-family:var(--font-head);font-size:.82rem;color:var(--text-strong);border-bottom:2px solid var(--emerald);padding:6px 4px}
@@ -190,6 +190,23 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .plist td:last-child{white-space:nowrap}
 .setup ol{line-height:2}
 .setup code{background:var(--bg-soft);padding:2px 6px;border-radius:3px;font-size:.88em}
+/* Home tabs and public packs */
+.hometabs{display:flex;justify-content:center;gap:26px;border-bottom:1px solid var(--line);margin:0 0 30px}
+.hometabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 2px;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:-1px;font-size:1rem}
+.hometabs button.on{color:var(--emerald-link);border-bottom-color:var(--emerald)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px}
+.chips button{border:1px solid var(--emerald);background:#fff;color:var(--emerald-dark);border-radius:16px;padding:5px 14px;cursor:pointer;font-size:.88rem}
+.chips button.on{background:var(--emerald);color:#fff}
+.catsec{width:100%;font-family:var(--font-head);font-weight:400;text-transform:uppercase;color:var(--emerald-dark);letter-spacing:.04em;margin:46px 14px 4px;font-size:1.2rem}
+.privacy{flex-basis:100%;margin:0;font-size:.82rem;color:#8a4b3c;background:#fff6f4;border-radius:4px;padding:8px 12px}
+.privnote{font-weight:400;color:var(--text);font-size:.78rem;margin-top:4px}
+fieldset.who{border:0;padding:0;margin:0 0 16px}
+fieldset.who legend{font-weight:600;color:var(--text-strong);margin-bottom:6px}
+fieldset.who label{display:block;margin:4px 0;cursor:pointer}
+fieldset.who input{accent-color:var(--emerald)}
+.pubtag{display:inline-block;font-size:.72rem;border-radius:10px;padding:1px 8px;background:#EEF7F3;color:var(--emerald-dark)}
+.privtag{display:inline-block;font-size:.72rem;border-radius:10px;padding:1px 8px;background:var(--bg-soft);color:var(--text)}
+
 /* Learner pack page */
 .packhead{text-align:center;margin:30px auto 10px;max-width:640px}
 .packhead .who{font-family:var(--font-head);color:var(--emerald-soft);text-transform:uppercase;letter-spacing:.06em;font-size:.85rem}
@@ -233,7 +250,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 <body>
 <header class="top">
   <a href="#" onclick="goHome();return false;" aria-label="All decks"><img src="logo.png" width="306" height="90" alt="Emerald Language Learning"></a>
-  <nav id="topNav"><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a><a id="navTeacher" onclick="location.hash='teacher'">Teachers</a></nav>
+  <nav id="topNav"><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navPacks" onclick="location.hash='packs'">Packs</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a><a id="navTeacher" onclick="location.hash='teacher'">Teachers</a></nav>
 </header>
 
 <main class="wrap">
@@ -241,6 +258,16 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
   <section id="home">
     <h1 class="sec">Flashcards</h1>
     <p class="lead">Pick a deck to study online, print it as cut-out cards, or download it for Anki, Quizlet or a spreadsheet.</p>
+    <div class="hometabs" role="tablist">
+      <button id="htDecks" class="on" onclick="location.hash=''">Decks</button>
+      <button id="htPacks" onclick="location.hash='packs'">Flash card packs</button>
+    </div>
+    <div id="homePacks" class="hidden">
+      <div class="chips" id="pkChips"></div>
+      <div id="ppState" class="state"><div class="spinner"></div>Loading packs…</div>
+      <div class="grid" id="ppGrid"></div>
+    </div>
+    <div id="homeDecks">
     <div class="filters" id="filters">
       <input id="q" type="search" placeholder="Search decks" aria-label="Search decks" oninput="renderDecks()">
       <select id="fCat" aria-label="Category" onchange="renderDecks()"><option value="">All categories</option></select>
@@ -248,6 +275,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
     </div>
     <div id="homeState" class="state"><div class="spinner"></div>Loading decks…</div>
     <div class="grid" id="grid"></div>
+    </div>
     <p class="note" id="updated"></p>
   </section>
 
@@ -330,7 +358,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
       <div class="study-head"><h1>Teacher area</h1><button class="btn ghost small" onclick="lockTeacher()">Lock</button></div>
       <div class="tabs" role="tablist">
         <button id="ttDeck" class="on" onclick="tTab('Deck')">Session deck</button>
-        <button id="ttPack" onclick="tTab('Pack')">Learner pack</button>
+        <button id="ttPack" onclick="tTab('Pack')">New pack</button>
         <button id="ttList" onclick="tTab('List')">Saved packs</button>
         <button id="ttSetup" onclick="tTab('Setup')">Setup</button>
       </div>
@@ -345,10 +373,11 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
             <select id="dMode"><option value="new">Save as a new deck</option><option value="update">Update the original deck</option></select>
           </label>
           <label class="wide">Deck title <input id="dTitle" maxlength="90"></label>
-          <label>Learner or group <input id="dWho" placeholder="e.g. Thalès group 2"></label>
+          <label>Category <input id="dWho" list="catList" placeholder="e.g. Aviation"></label>
           <label>Level <input id="dLevel" placeholder="e.g. B1"></label>
           <label class="wide">Description <input id="dDesc" placeholder="e.g. Words from our session on hydraulics"></label>
           <label class="chk"><input type="checkbox" id="dShow"> Also show this deck on the home page</label>
+          <p class="privacy">Decks are public: anyone with the site can read them. Don't put learners' names or personal details in titles, descriptions or cards.</p>
         </div>
         <table class="ed"><thead><tr><th>Word</th><th>Meaning</th><th>Example (optional)</th><th>Notes (optional)</th><th></th></tr></thead><tbody id="edBody"></tbody></table>
         <div class="row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
@@ -365,11 +394,18 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
       </div>
 
       <div id="tpPack" class="hidden">
+        <fieldset class="who">
+          <legend>Who is this pack for?</legend>
+          <label><input type="radio" name="pFor" value="learner" checked onchange="packFor()"> One learner: private link, never listed on the site</label>
+          <label><input type="radio" name="pFor" value="public" onchange="packFor()"> Everyone: listed on the main page under “Flash card packs”</label>
+        </fieldset>
         <div class="form">
-          <label>Learner's name <input id="pWho" placeholder="e.g. Marie Dupont" oninput="packTitleHint()"></label>
+          <label id="pWhoBox">Learner's name <input id="pWho" placeholder="e.g. Marie Dupont" oninput="packTitleHint()"><small class="privnote">Only teachers see this. It's kept in your private file, never on the public site.</small></label>
           <label>Pack title <input id="pTitle" placeholder="Your vocabulary"></label>
-          <label class="wide">Message to the learner (optional) <textarea id="pMsg" placeholder="e.g. Review these before Thursday's session."></textarea></label>
+          <label>Category <input id="pCat" list="catList" placeholder="e.g. Business English"></label>
+          <label class="wide"><span id="pMsgLabel">Message to the learner (optional)</span> <textarea id="pMsg" placeholder="e.g. Review these before Thursday's session."></textarea></label>
         </div>
+        <datalist id="catList"></datalist>
         <label style="font-weight:600;color:var(--text-strong)">Decks in this pack <span id="pCount" style="font-weight:400"></span></label>
         <input id="pSearch" type="search" placeholder="Filter decks" oninput="renderPackChecks()">
         <div class="checks" id="pDecks"></div>
@@ -377,9 +413,9 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
       </div>
 
       <div id="tpList" class="hidden">
-        <p>Packs saved in the Google Sheet (tab “Packs”). Edit one to add or remove decks: the learner's link stays the same.</p>
+        <p>Learner packs are kept in your private file; public packs are in the sheet's “Packs” tab. Edit one to change it: its link stays the same.</p>
         <div id="listState" class="state hidden"></div>
-        <table class="plist"><thead><tr><th>Learner</th><th>Pack</th><th>Decks</th><th>Updated</th><th></th></tr></thead><tbody id="plBody"></tbody></table>
+        <table class="plist"><thead><tr><th>Pack</th><th>For</th><th>Category</th><th>Decks</th><th>Updated</th><th></th></tr></thead><tbody id="plBody"></tbody></table>
       </div>
 
       <div id="tpSetup" class="hidden setup">
@@ -397,6 +433,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
   <section id="packView" class="hidden">
     <div class="packhead">
       <div class="who" id="pkWho"></div>
+      <a id="pkBack" class="btn ghost small hidden" href="#packs">← All packs</a>
       <h1 class="sec" id="pkTitle" style="margin-top:6px">Your vocabulary</h1>
     </div>
     <div class="packmsg hidden" id="pkMsg"></div>
@@ -605,8 +642,13 @@ function packId(){ return qParam('pack'); }
 function route(){
   var lt=learnerTab(), st=studyTab(), pk=packId();
   $('topNav').style.display=learnerMode()?'none':'';
-  $('navTeacher').className=location.hash==='#teacher'?'active':''; $('navDecks').className=location.hash==='#teacher'?'':'active';
-  if(location.hash==='#teacher' && !learnerMode()) return showTeacher();
+  var hsh=location.hash, onPacks=hsh==='#packs'||hsh.indexOf('#pack=')===0;
+  $('navTeacher').className=hsh==='#teacher'?'active':''; $('navPacks').className=onPacks?'active':''; $('navDecks').className=(hsh==='#teacher'||onPacks)?'':'active';
+  if(hsh==='#teacher' && !learnerMode()) return showTeacher();
+  if(!learnerMode()){
+    if(hsh==='#packs') return showHomePacks();
+    var pm=/^#pack=([^&]+)/.exec(hsh); if(pm) return showPack(decodeURIComponent(pm[1]), true);
+  }
   if(lt && !location.hash) return showLearner(lt);
   if(st){
     var sd=findDeck(st);
@@ -636,6 +678,7 @@ function openDeck(n){ location.hash='deck='+encodeURIComponent(decks[n].tab); }
 function showHome(){
   if(learnerMode()){ location.href=location.pathname+(/[?&]sheet=/.test(location.search)?'?sheet='+sheetId():''); return; }
   only('home'); document.title='Flashcards | Emerald Language Learning';
+  $('homeDecks').className=''; $('homePacks').className='hidden'; $('htDecks').className='on'; $('htPacks').className='';
 }
 function reloadAll(){ cache={}; loadContents(); }
 
@@ -1123,7 +1166,7 @@ function initTeacher(){
   $('tWarn').className=scriptUrl()?'err hidden':'err';
   $('sUrl').value=scriptUrl()||'';
   fillFromSelect();
-  if(!tReady){ tReady=true; clearDeckForm(); renderPackChecks(); }
+  if(!tReady){ tReady=true; clearDeckForm(); clearPackForm(); }
 }
 function tTab(t){
   ['Deck','Pack','List','Setup'].forEach(function(k){ $('tp'+k).className=k===t?(k==='Setup'?'setup':''):'hidden'; $('tt'+k).className=k===t?'on':''; });
@@ -1211,10 +1254,26 @@ function saveDeckUI(){
   });
 }
 
-/* Learner packs */
-function packTitleHint(){ var w=$('pWho').value.trim(); $('pTitle').placeholder=w?w.split(' ')[0]+'’s vocabulary':'Your vocabulary'; }
+/* Packs: public packs (main page, no learner info) and learner packs (private file, through the save script) */
+var DEFAULT_CATS=['General','Aviation','Grammar','Verbs','Business English','Pronunciation'];
+function packTitleHint(){ var w=$('pWho').value.trim(), pub=packIsPublic(); $('pTitle').placeholder=pub?'e.g. Phrasal verbs for meetings':(w?w.split(' ')[0]+'’s vocabulary':'Your vocabulary'); }
+function packIsPublic(){ var r=document.getElementsByName('pFor'); for(var i=0;i<r.length;i++) if(r[i].checked) return r[i].value==='public'; return false; }
+function setPackFor(pub){ var r=document.getElementsByName('pFor'); for(var i=0;i<r.length;i++) r[i].checked=(r[i].value==='public')===pub; packFor(); }
+function packFor(){
+  var pub=packIsPublic();
+  $('pWhoBox').style.display=pub?'none':'';
+  $('pMsgLabel').textContent=pub?'Description (optional)':'Message to the learner (optional)';
+  $('pMsg').placeholder=pub?'e.g. The most useful phrasal verbs for meetings and emails.':'e.g. Review these before Thursday’s session.';
+  packTitleHint();
+}
+function fillCats(extra){
+  var seen={}, html='';
+  DEFAULT_CATS.concat(allDecks.map(function(d){return d.cat;})).concat(extra||[]).forEach(function(c){ if(c && !seen[c.toLowerCase()]){ seen[c.toLowerCase()]=1; html+='<option value="'+esc(c)+'">'; } });
+  $('catList').innerHTML=html;
+}
 var packSel={};
 function renderPackChecks(){
+  fillCats();
   var q=($('pSearch').value||'').toLowerCase(), html='';
   allDecks.forEach(function(d){
     if(q && (d.title+' '+d.cat+' '+d.desc).toLowerCase().indexOf(q)<0 && !packSel[d.tab]) return;
@@ -1224,52 +1283,64 @@ function renderPackChecks(){
   $('pDecks').innerHTML=html||'<p>No decks yet.</p>'; countPack();
 }
 function countPack(){ var n=0; for(var k in packSel) if(packSel[k]) n++; $('pCount').textContent='('+n+' selected)'; return n; }
-function clearPackForm(){ editingPack=''; packSel={}; $('pWho').value=''; $('pTitle').value=''; $('pMsg').value=''; $('pSearch').value=''; $('pMsgOut').textContent=''; packTitleHint(); renderPackChecks(); }
+function clearPackForm(){ editingPack=''; packSel={}; $('pWho').value=''; $('pTitle').value=''; $('pCat').value=''; $('pMsg').value=''; $('pSearch').value=''; $('pMsgOut').textContent=''; setPackFor(false); renderPackChecks(); }
 function savePackUI(){
-  var out=$('pMsgOut'), chosen=[];
+  var out=$('pMsgOut'), chosen=[], pub=packIsPublic();
   allDecks.forEach(function(d){ if(packSel[d.tab]) chosen.push(d.tab); });
   for(var k in packSel) if(packSel[k] && chosen.indexOf(k)<0) chosen.push(k);
   out.className='msg bad';
-  if(!$('pWho').value.trim()){ out.textContent='Enter the learner’s name.'; return $('pWho').focus(); }
+  if(!pub && !$('pWho').value.trim()){ out.textContent='Enter the learner’s name (it stays private).'; return $('pWho').focus(); }
+  if(pub && !$('pTitle').value.trim()){ out.textContent='Give the pack a title.'; return $('pTitle').focus(); }
   if(!chosen.length){ out.textContent='Choose at least one deck.'; return; }
-  var title=$('pTitle').value.trim()||$('pTitle').placeholder;
-  out.className='msg'; out.textContent='Saving to the Google Sheet…'; $('pSave').disabled=true;
-  api('savePack', {id:editingPack, title:title, learner:$('pWho').value.trim(), message:$('pMsg').value.trim(), decks:chosen}, function(r){
+  var title=$('pTitle').value.trim()||$('pTitle').placeholder, learner=pub?'':$('pWho').value.trim();
+  out.className='msg'; out.textContent='Saving…'; $('pSave').disabled=true;
+  api('savePack', {id:editingPack, public:pub, title:title, learner:learner, category:$('pCat').value.trim(), message:$('pMsg').value.trim(), decks:chosen}, function(r){
     $('pSave').disabled=false;
     if(!r.ok){ out.className='msg bad'; out.textContent=r.error||'Could not save.'; if(!ssGet('ell-fc-pin')) showTeacher(); return; }
-    editingPack=r.id; packsCache=null;
-    out.textContent='Saved. Editing this pack later keeps the same link.';
-    openSharePack({id:r.id, title:title, learner:$('pWho').value.trim()});
+    editingPack=r.id; publicPacks=null;
+    out.textContent=pub?'Saved. It now appears under “Flash card packs”.':'Saved privately. Editing this pack later keeps the same link.';
+    openSharePack({id:r.id, title:title, learner:learner});
   });
 }
-function loadPacks(cb){
-  if(packsCache) return cb(packsCache);
+/* Public packs: read straight from the public sheet (tab "Packs"). Ignores any tab that still has a Learner column. */
+var publicPacks=null;
+function loadPublicPacks(cb){
+  if(publicPacks) return cb(publicPacks);
   get(tabUrl(PACKS_TAB), function(t){
     var rows=parseCSV(t), head=(rows[0]||[]).map(function(h){return h.trim().toLowerCase();});
-    if(head.indexOf('pack id')<0) return cb([]);          // no Packs tab yet
-    packsCache=toObjects(t).map(function(r){
-      return {id:r['pack id'], title:r['pack title'], learner:r['learner'], message:r['message'], decks:(r['decks']||'').split(/\n/).map(function(x){return x.trim();}).filter(Boolean), updated:r['updated']||r['created']};
-    }).filter(function(p){ return p.id; });
-    cb(packsCache);
+    if(head.indexOf('pack id')<0 || head.indexOf('learner')>=0) return cb(publicPacks=[]);
+    publicPacks=toObjects(t).map(function(r){
+      return {id:r['pack id'], title:r['pack title'], category:r['category']||'', message:r['description']||'', decks:(r['decks']||'').split(/\n/).map(function(x){return x.trim();}).filter(Boolean), updated:r['updated'], public:true};
+    }).filter(function(p){ return p.id && p.decks.length; });
+    cb(publicPacks);
   }, function(err){ cb(null, err); });
+}
+/* Learner pack: asked from the save script by its private code; the reply never contains the learner's name. */
+function loadPrivatePack(id, cb){
+  var url=scriptUrl(); if(!url) return cb(null, 'no script');
+  var x=new XMLHttpRequest(); x.open('GET', url+'?pack='+encodeURIComponent(id), true); x.timeout=30000;
+  x.onload=function(){ var r=null; try{ r=JSON.parse(x.responseText); }catch(e){} cb(r && r.ok ? r.pack : null, r && r.ok ? null : (r?'not found':'bad reply')); };
+  x.onerror=function(){ cb(null,'network'); }; x.ontimeout=function(){ cb(null,'network'); };
+  x.send();
 }
 function loadPackList(){
   $('listState').className='state'; $('listState').innerHTML='<div class="spinner"></div>Loading packs…'; $('plBody').innerHTML='';
-  packsCache=null;
-  loadPacks(function(packs, err){
-    if(!packs){ $('listState').className='err'; $('listState').textContent='Packs could not be loaded ('+err+').'; return; }
-    $('listState').className=packs.length?'state hidden':'state'; $('listState').textContent='No packs yet. Create one in “Learner pack”.';
+  api('listPacks', {}, function(r){
+    if(!r.ok){ $('listState').className='err'; $('listState').textContent=r.error||'Packs could not be loaded.'; if(!ssGet('ell-fc-pin')) showTeacher(); return; }
+    var packs=r.packs||[];
+    packs.sort(function(a,b){ return (b.updated||'')>(a.updated||'')?1:-1; });
+    $('listState').className=packs.length?'state hidden':'state'; $('listState').textContent='No packs yet. Create one in “New pack”.';
     window.__packs=packs;
-    $('plBody').innerHTML=packs.slice().reverse().map(function(p){
-      var i=packs.indexOf(p);
-      return '<tr><td>'+esc(p.learner)+'</td><td>'+esc(p.title)+'</td><td>'+p.decks.length+'</td><td>'+esc(p.updated)+'</td><td>'+
+    $('plBody').innerHTML=packs.map(function(p, i){
+      return '<tr><td>'+esc(p.title)+'</td><td>'+(p.public?'<span class="pubtag">Everyone</span>':'<span class="privtag">'+esc(p.learner||'Learner')+'</span>')+'</td><td>'+esc(p.category)+'</td><td>'+p.decks.length+'</td><td>'+esc(p.updated)+'</td><td>'+
         '<button class="btn small" onclick="openSharePack(__packs['+i+'])">Share</button> <button class="btn ghost small" onclick="editPack(__packs['+i+'])">Edit</button></td></tr>';
     }).join('');
   });
 }
 function editPack(p){
   editingPack=p.id; packSel={}; p.decks.forEach(function(t){ packSel[t]=true; });
-  $('pWho').value=p.learner||''; $('pTitle').value=p.title||''; $('pMsg').value=p.message||''; $('pSearch').value=''; packTitleHint();
+  setPackFor(!!p.public);
+  $('pWho').value=p.learner||''; $('pTitle').value=p.title||''; $('pCat').value=p.category||''; $('pMsg').value=p.message||''; $('pSearch').value=''; packTitleHint();
   tTab('Pack'); $('pMsgOut').className='msg'; $('pMsgOut').textContent='Editing “'+p.title+'”. Saving keeps the same link.';
 }
 function saveSetup(){
@@ -1281,29 +1352,74 @@ function saveSetup(){
   api('ping', {}, function(r){ $('sMsg').className=r.ok?'msg':'msg bad'; $('sMsg').textContent=r.ok?'Connected. Decks and packs will be saved to the sheet.':(r.error||'Not connected.'); });
 }
 
-/* ---------- Learner pack page ---------- */
+/* ---------- Pack page: ?pack=<id> (learner link) or #pack=<id> (from the main page) ---------- */
 var packItems=[], curPack=null;
-function showPack(id){
+function showPack(id, inSite){
   only('packView');
-  loadPacks(function(packs, err){
-    var p=null; (packs||[]).forEach(function(x){ if(x.id===id) p=x; });
-    if(!p){ $('pkState').className='err'; $('pkState').innerHTML=packs?'This link does not match a vocabulary pack. Please ask your trainer for a new link.':'Your vocabulary could not be loaded. Check your internet connection and open the link again.'; return; }
-    curPack=p; document.title=p.title+' | Emerald Language Learning';
-    $('pkWho').textContent=p.learner?'For '+p.learner:''; $('pkTitle').textContent=p.title;
-    if(p.message){ $('pkMsg').textContent=p.message; $('pkMsg').className='packmsg'; }
-    var html='', q='&pack='+encodeURIComponent(p.id)+sheetQ(), n=0;
-    p.decks.forEach(function(tab, i){
-      var d=findDeck(tab); if(!d) return; n++;
-      var meta=[d.level].filter(Boolean).join(' · ');
-      html+='<article class="deck"><div class="circ">'+ICONS[i%ICONS.length]+'</div><h2>'+esc(d.title)+'</h2>'+(meta?'<div class="meta">'+esc(meta)+'</div>':'')+'<p>'+esc(d.desc)+'</p><div class="acts">'+
-        '<a class="btn" href="?study='+encodeURIComponent(d.tab)+q+'">Study</a>'+
-        '<a class="btn ghost" href="?pdf='+encodeURIComponent(d.tab)+q+'">PDF</a></div></article>';
-    });
-    $('pkGrid').innerHTML=html;
-    $('pkState').className=n?'state hidden':'state'; $('pkState').textContent='This pack is empty for now.';
-    $('pkAllBox').className=n>1?'':'hidden';
+  $('pkBack').className=inSite?'btn ghost small':'btn ghost small hidden';
+  $('pkState').className='state'; $('pkState').innerHTML='<div class="spinner"></div>Loading the decks…';
+  $('pkGrid').innerHTML=''; $('pkMsg').className='packmsg hidden'; $('pkAllBox').className='hidden'; $('pkWho').textContent=''; $('pkTitle').textContent='';
+  loadPublicPacks(function(pubs){
+    var p=null; (pubs||[]).forEach(function(x){ if(x.id===id) p=x; });
+    if(p) return renderPack(p, inSite);
+    if(inSite){ return packMissing(true); }
+    loadPrivatePack(id, function(pp, err){ if(pp) renderPack(pp, false); else packMissing(err==='not found'); });
   });
 }
+function packMissing(notFound){
+  $('pkTitle').textContent='Vocabulary';
+  $('pkState').className='err'; $('pkState').innerHTML=notFound?'This link does not match a vocabulary pack. Please ask your trainer for a new link.':'Your vocabulary could not be loaded. Check your internet connection and open the link again.';
+}
+function renderPack(p, inSite){
+  curPack=p; document.title=p.title+' | Emerald Language Learning';
+  $('pkWho').textContent=p.category||''; $('pkTitle').textContent=p.title;
+  if(p.message){ $('pkMsg').textContent=p.message; $('pkMsg').className='packmsg'; }
+  var html='', n=0;
+  p.decks.forEach(function(tab, i){
+    var d=findDeck(tab); if(!d) return; n++;
+    var study=inSite ? '#deck='+encodeURIComponent(d.tab) : '?study='+encodeURIComponent(d.tab)+'&pack='+encodeURIComponent(p.id)+sheetQ();
+    var pdf='?pdf='+encodeURIComponent(d.tab)+(inSite?'':'&pack='+encodeURIComponent(p.id))+sheetQ();
+    var meta=[d.level].filter(Boolean).join(' · ');
+    html+='<article class="deck"><div class="circ">'+ICONS[i%ICONS.length]+'</div><h2>'+esc(d.title)+'</h2>'+(meta?'<div class="meta">'+esc(meta)+'</div>':'')+'<p>'+esc(d.desc)+'</p><div class="acts">'+
+      '<a class="btn" href="'+study+'">Study</a><a class="btn ghost" href="'+pdf+'">PDF</a></div></article>';
+  });
+  $('pkGrid').innerHTML=html;
+  $('pkState').className=n?'state hidden':'state'; if(!n) $('pkState').textContent='This pack is empty for now.';
+  $('pkAllBox').className=n>1?'':'hidden';
+}
+
+/* ---------- Main page: Flash card packs ---------- */
+var packCat='';
+function showHomePacks(){
+  only('home'); document.title='Flash card packs | Emerald Language Learning';
+  $('homeDecks').className='hidden'; $('homePacks').className=''; $('htDecks').className=''; $('htPacks').className='on';
+  loadPublicPacks(function(packs, err){
+    if(!packs){ $('ppState').className='err'; $('ppState').textContent='The packs could not be loaded ('+err+').'; return; }
+    renderHomePacks();
+  });
+}
+function setPackCat(c){ packCat=c; renderHomePacks(); }
+function renderHomePacks(){
+  var packs=publicPacks||[], cats=[], seen={};
+  packs.forEach(function(p){ var c=p.category||'General'; if(!seen[c]){ seen[c]=1; cats.push(c); } });
+  cats.sort(function(a,b){ var ia=DEFAULT_CATS.indexOf(a), ib=DEFAULT_CATS.indexOf(b); ia=ia<0?99:ia; ib=ib<0?99:ib; return ia-ib || (a<b?-1:1); });
+  if(packCat && !seen[packCat]) packCat='';
+  $('pkChips').innerHTML=cats.length>1 ? ['<button class="'+(packCat?'':'on')+'" onclick="setPackCat(\'\')">All</button>'].concat(cats.map(function(c){ return '<button class="'+(packCat===c?'on':'')+'" data-c="'+esc(c)+'" onclick="setPackCat(this.getAttribute(\'data-c\'))">'+esc(c)+'</button>'; })).join('') : '';
+  var html='', k=0;
+  cats.forEach(function(c){
+    if(packCat && c!==packCat) return;
+    html+='<h2 class="catsec">'+esc(c)+'</h2>';
+    packs.forEach(function(p){
+      if((p.category||'General')!==c) return;
+      var n=p.decks.filter(function(t){ return findDeck(t); }).length;
+      html+='<article class="deck"><div class="circ">'+ICONS[(k++)%ICONS.length]+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
+        '<a class="btn" href="#pack='+encodeURIComponent(p.id)+'">Open</a></div></article>';
+    });
+  });
+  $('ppGrid').innerHTML=html;
+  $('ppState').className=packs.length?'state hidden':'state'; if(!packs.length) $('ppState').textContent='No packs yet.';
+}
+
 function packPdf(){
   var tabs=curPack.decks.filter(function(t){ return findDeck(t); }), items=[], left=tabs.length;
   $('pkAll').disabled=true; $('pkAllMsg').className='msg'; $('pkAllMsg').textContent='Preparing your PDF…';

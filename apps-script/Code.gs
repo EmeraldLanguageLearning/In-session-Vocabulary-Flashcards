@@ -11,23 +11,44 @@
 
 // The flashcards sheet: "Emerald Flashcards – Contents"
 var SHEET_ID = '1KTx7_WW-YiZON8G3uuHCsYfM1cpfjtoRaV1mL3LaNa4';
+// Private file for learner packs (learner names, messages). Never share it: the site reads it only through this script.
+var PRIVATE_ID = '1Foifj3QThsBsIgTtGIuacbgeT9QvjbtCkvkYR4DwooM';
+var LEARNER_PACKS = 'Learner packs';
 var PIN_HASH = 2085847969;           // same trainer PIN as the Emerald-web trainer page
 var CONTENTS = 'Contents';
 var PACKS = 'Packs';
 var DECK_HEADER = ['Front', 'Back', 'Example', 'Notes'];
-var PACK_HEADER = ['Pack ID', 'Pack title', 'Learner', 'Message', 'Decks', 'Created', 'Updated'];
+// Public packs (shown on the site's main page): no learner information.
+var PUBLIC_HEADER = ['Pack ID', 'Pack title', 'Category', 'Description', 'Decks', 'Updated'];
+// Learner packs (private file only).
+var PRIVATE_HEADER = ['Pack ID', 'Pack title', 'Learner', 'Message', 'Category', 'Decks', 'Created', 'Updated'];
 
 function h(s) { var x = 5381; for (var k = 0; k < s.length; k++) { x = ((x * 33) ^ s.charCodeAt(k)) >>> 0; } return x; }
 
 function book() { return SpreadsheetApp.openById(SHEET_ID); }
+function privateBook() { return SpreadsheetApp.openById(PRIVATE_ID); }
 
 /** Run this once from the editor: it asks for permission and checks the sheet is reachable. */
 function setup() {
   var ss = book();
   Logger.log('Connected to "' + ss.getName() + '". Contents tab found: ' + !!ss.getSheetByName(CONTENTS));
+  Logger.log('Private learner packs: "' + privateBook().getName() + '".');
 }
 
-function doGet() { return out({ ok: true, service: 'Emerald Flashcards save script' }); }
+/** GET ?pack=<id>: a learner pack's title, message and decks, without the learner's name. */
+function doGet(e) {
+  var id = s(e && e.parameter && e.parameter.pack);
+  if (!id) return out({ ok: true, service: 'Emerald Flashcards save script' });
+  var sh = privateBook().getSheetByName(LEARNER_PACKS);
+  var data = sh ? sh.getDataRange().getValues() : [];
+  for (var j = 1; j < data.length; j++) {
+    if (s(data[j][0]) === id) {
+      return out({ ok: true, pack: { id: id, title: s(data[j][1]), message: s(data[j][3]), category: s(data[j][4]),
+        decks: s(data[j][5]).split('\n').map(s).filter(String) } });
+    }
+  }
+  return out({ ok: false, error: 'not found' });
+}
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -45,6 +66,7 @@ function doPost(e) {
     if (req.action === 'ping') return out({ ok: true });
     if (req.action === 'saveDeck') return out(saveDeck(ss, req));
     if (req.action === 'savePack') return out(savePack(ss, req));
+    if (req.action === 'listPacks') return out(listPacks(ss));
     return out({ ok: false, error: 'Unknown action.' });
   } catch (err) {
     return out({ ok: false, error: String(err && err.message || err) });
@@ -93,22 +115,56 @@ function saveDeck(ss, r) {
   return { ok: true, tab: name };
 }
 
+function packSheet(ss, name, header) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name, ss.getSheets().length);
+  if (s(sh.getRange(1, 1).getValue()) !== 'Pack ID' || sh.getLastColumn() < header.length) {
+    sh.getRange(1, 1, 1, header.length).setValues([header]);
+    styleHeader(sh, header.length);
+  }
+  return sh;
+}
+function findRow(sh, id) {
+  var data = sh.getDataRange().getValues();
+  for (var j = 1; j < data.length; j++) if (s(data[j][0]) === id) return { row: j + 1, values: data[j] };
+  return null;
+}
+function writeRow(sh, found, row) {
+  var target = found ? sh.getRange(found.row, 1, 1, row.length) : sh.getRange(sh.getLastRow() + 1, 1, 1, row.length);
+  target.setNumberFormat('@').setValues([row]).setWrap(true).setVerticalAlignment('top');
+}
+
+/** Public packs go to the public sheet (no learner info); learner packs go to the private file. */
 function savePack(ss, r) {
   var decks = (r.decks || []).map(s).filter(String);
   if (!decks.length) throw new Error('Choose at least one deck.');
-  var sh = ss.getSheetByName(PACKS);
-  if (!sh) {
-    sh = ss.insertSheet(PACKS, ss.getSheets().length);
-    sh.getRange(1, 1, 1, PACK_HEADER.length).setValues([PACK_HEADER]);
-    styleHeader(sh, PACK_HEADER.length);
-    sh.setColumnWidth(1, 110); sh.setColumnWidths(2, 4, 220);
-  }
+  var title = s(r.title);
+  if (!title) throw new Error('Give the pack a title.');
   var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
-  var id = s(r.id), data = sh.getDataRange().getValues(), found = 0, created = now;
-  if (id) for (var j = 1; j < data.length; j++) if (s(data[j][0]) === id) { found = j + 1; created = s(data[j][5]) || now; break; }
-  if (!id) id = Utilities.getUuid().replace(/-/g, '').slice(0, 10);
-  var row = [id, s(r.title) || 'Your vocabulary', s(r.learner), s(r.message), decks.join('\n'), created, now];
-  var target = found ? sh.getRange(found, 1, 1, row.length) : sh.getRange(sh.getLastRow() + 1, 1, 1, row.length);
-  target.setNumberFormat('@').setValues([row]).setWrap(true).setVerticalAlignment('top');
+  var id = s(r.id) || Utilities.getUuid().replace(/-/g, '').slice(0, 10);
+  var pub = packSheet(ss, PACKS, PUBLIC_HEADER);
+  var priv = packSheet(privateBook(), LEARNER_PACKS, PRIVATE_HEADER);
+  var inPub = findRow(pub, id), inPriv = findRow(priv, id);
+  if (r.public) {
+    if (inPriv) priv.deleteRow(inPriv.row);
+    writeRow(pub, inPub, [id, title, s(r.category), s(r.message), decks.join('\n'), now]);
+  } else {
+    if (inPub) pub.deleteRow(inPub.row);
+    var created = inPriv ? s(inPriv.values[6]) || now : now;
+    writeRow(priv, inPriv, [id, title, s(r.learner), s(r.message), s(r.category), decks.join('\n'), created, now]);
+  }
   return { ok: true, id: id };
+}
+
+/** Teacher list (PIN-checked): both kinds of packs. */
+function listPacks(ss) {
+  var list = [];
+  function rows(sh) { return sh ? sh.getDataRange().getValues().slice(1) : []; }
+  rows(ss.getSheetByName(PACKS)).forEach(function (v) {
+    if (s(v[0])) list.push({ id: s(v[0]), title: s(v[1]), category: s(v[2]), message: s(v[3]), decks: s(v[4]).split('\n').map(s).filter(String), updated: s(v[5]), public: true, learner: '' });
+  });
+  rows(privateBook().getSheetByName(LEARNER_PACKS)).forEach(function (v) {
+    if (s(v[0])) list.push({ id: s(v[0]), title: s(v[1]), learner: s(v[2]), message: s(v[3]), category: s(v[4]), decks: s(v[5]).split('\n').map(s).filter(String), updated: s(v[7]) || s(v[6]), public: false });
+  });
+  return { ok: true, packs: list };
 }
