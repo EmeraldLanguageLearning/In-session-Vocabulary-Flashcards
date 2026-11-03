@@ -167,7 +167,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .form label.chk{flex-direction:row;align-items:center;gap:8px;font-weight:400;color:var(--text)}
 .form label.chk input{width:auto;margin:0;accent-color:var(--emerald)}
 .form label.chk{flex-basis:100%}
-.form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl{border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-weight:400;color:var(--text-strong);background:#fff;margin-top:4px;width:100%}
+.form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl,#sdSearch{border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-weight:400;color:var(--text-strong);background:#fff;margin-top:4px;width:100%}
 .form textarea{min-height:64px;resize:vertical;font-family:inherit;font-size:1rem}
 .form input:focus,.form select:focus,.form textarea:focus,.ed input:focus{outline:2px solid var(--emerald-soft);border-color:var(--emerald)}
 .ed{width:100%;border-collapse:collapse}
@@ -238,7 +238,7 @@ fieldset.who input{accent-color:var(--emerald)}
   }
   html,body{background:var(--bg)}
   .top,.modal,.dl-menu,.face.back,.btn.ghost,.btn.again,.chips button,.say,.look,.keys button.fn,
-  .filters input,.filters select,.form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl{background:var(--card)}
+  .filters input,.filters select,.form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl,#sdSearch{background:var(--card)}
   .btn.ghost:hover,.say:hover,.say:active,.lkdef:hover,.look:hover,.keys button:active,.btn.again:hover{background:var(--tint)}
   .chips button.on{background:var(--emerald);color:#fff}
   .pubtag{background:var(--tint)}
@@ -397,7 +397,8 @@ fieldset.who input{accent-color:var(--emerald)}
     <div id="tOpen" class="hidden">
       <div class="study-head"><h1>Teacher area</h1><button class="btn ghost small" onclick="lockTeacher()">Lock</button></div>
       <div class="tabs" role="tablist">
-        <button id="ttDeck" class="on" onclick="tTab('Deck')">Session deck</button>
+        <button id="ttDeck" class="on" onclick="tTab('Deck')">New deck</button>
+        <button id="ttDecks" onclick="tTab('Decks')">Saved decks</button>
         <button id="ttPack" onclick="tTab('Pack')">New pack</button>
         <button id="ttList" onclick="tTab('List')">Saved packs</button>
         <button id="ttSetup" onclick="tTab('Setup')">Setup</button>
@@ -405,12 +406,10 @@ fieldset.who input{accent-color:var(--emerald)}
       <div id="tWarn" class="err hidden" style="max-width:none;margin:0 0 20px">Saving is not connected yet. <a href="#teacher" onclick="tTab('Setup');return false;">Open Setup</a> to connect the Google Sheet.</div>
 
       <div id="tpDeck">
+        <div id="dEditing" class="hidden">Editing “<b id="dEditingTitle"></b>”. Saving changes this deck for everyone, including links you have already shared. <a href="#teacher" onclick="clearDeckForm();return false;">Start a new deck instead</a></div>
         <div class="form">
-          <label>Start from
-            <select id="dFrom" onchange="startFrom()"><option value="">A blank deck</option></select>
-          </label>
-          <label id="dModeBox" class="hidden">When saving
-            <select id="dMode"><option value="new">Save as a new deck</option><option value="update">Update the original deck</option></select>
+          <label id="dFromBox">Copy words from (optional)
+            <select id="dFrom" onchange="startFrom()"><option value="">Nothing: a blank deck</option></select>
           </label>
           <label class="wide">Deck title <input id="dTitle" maxlength="90"></label>
           <label>Category <input id="dWho" list="catList" placeholder="e.g. Aviation"></label>
@@ -431,6 +430,12 @@ fieldset.who input{accent-color:var(--emerald)}
           <button class="btn small" style="margin-top:8px" onclick="importPaste()">Add these words</button>
         </div>
         <div class="savebar"><span id="dMsg" class="msg"></span><button class="btn" id="dSave" onclick="saveDeckUI()">Save and share</button></div>
+      </div>
+
+      <div id="tpDecks" class="hidden">
+        <p>Every deck in the sheet. <b>Edit</b> changes the deck itself: links you have already shared show the new version.</p>
+        <input id="sdSearch" type="search" placeholder="Filter decks" oninput="renderSavedDecks()" style="margin-bottom:10px">
+        <table class="plist"><thead><tr><th>Deck</th><th>Category</th><th>Home page</th><th></th></tr></thead><tbody id="sdBody"></tbody></table>
       </div>
 
       <div id="tpPack" class="hidden">
@@ -1210,15 +1215,16 @@ function initTeacher(){
   if(!tReady){ tReady=true; clearDeckForm(); clearPackForm(); }
 }
 function tTab(t){
-  ['Deck','Pack','List','Setup'].forEach(function(k){ $('tp'+k).className=k===t?(k==='Setup'?'setup':''):'hidden'; $('tt'+k).className=k===t?'on':''; });
+  ['Deck','Decks','Pack','List','Setup'].forEach(function(k){ $('tp'+k).className=k===t?(k==='Setup'?'setup':''):'hidden'; $('tt'+k).className=k===t?'on':''; });
   if(t==='List') loadPackList();
+  if(t==='Decks') renderSavedDecks();
   if(t==='Pack') renderPackChecks();
 }
 function today(){ var d=new Date(); return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear(); }
 
 /* Session deck editor */
 function fillFromSelect(){
-  var sel=$('dFrom'), keep=sel.value, html='<option value="">A blank deck</option>';
+  var sel=$('dFrom'), keep=sel.value, html='<option value="">Nothing: a blank deck</option>';
   allDecks.forEach(function(d){ html+='<option value="'+esc(d.tab)+'">'+esc(d.title)+(d.hidden?' (not on home page)':'')+'</option>'; });
   sel.innerHTML=html; sel.value=keep;
 }
@@ -1231,7 +1237,7 @@ function rowHTML(c){
 function addRow(c){ var tb=$('edBody'), t=document.createElement('tbody'); t.innerHTML=rowHTML(c); tb.appendChild(t.firstChild); }
 function focusLast(){ var i=$('edBody').querySelectorAll('.eF'); if(i.length) i[i.length-1].focus(); }
 function clearDeckForm(){
-  editingTab=''; $('dFrom').value=''; $('dModeBox').className='hidden';
+  editingTab=''; $('dFrom').value=''; $('dFromBox').style.display=''; $('dEditing').className='hidden'; $('dSave').textContent='Save and share';
   $('dTitle').value='Session – '+today(); $('dWho').value=''; $('dLevel').value=''; $('dDesc').value=''; $('dShow').checked=false;
   $('edBody').innerHTML=''; for(var i=0;i<5;i++) addRow();
   $('dMsg').textContent=''; $('dMsg').className='msg';
@@ -1242,9 +1248,34 @@ function startFrom(){
   $('dMsg').textContent='Loading…';
   loadDeck(d, function(cards){
     $('dMsg').textContent='';
-    editingTab=d.tab; $('dModeBox').className=''; $('dMode').value=d.hidden?'update':'new';
-    $('dTitle').value=d.title; $('dWho').value=d.cat||''; $('dLevel').value=d.level||''; $('dDesc').value=d.desc||''; $('dShow').checked=!d.hidden;
+    editingTab='';   /* copying: saving creates a NEW deck; to change this deck use Saved decks › Edit */
+    $('dTitle').value=d.title+' (copy)'; $('dWho').value=d.cat||''; $('dLevel').value=d.level||''; $('dDesc').value=d.desc||''; $('dShow').checked=!d.hidden;
     $('edBody').innerHTML=''; (cards||[]).forEach(addRow); addRow();
+  });
+}
+/* Saved decks: list + edit in place */
+function renderSavedDecks(){
+  var q=($('sdSearch').value||'').toLowerCase();
+  $('sdBody').innerHTML=allDecks.filter(function(d){ return !q || (d.title+' '+d.cat+' '+d.desc).toLowerCase().indexOf(q)>=0; }).map(function(d){
+    var t=esc(d.tab);
+    return '<tr><td>'+esc(d.title)+(d.desc?'<br><small>'+esc(d.desc)+'</small>':'')+'</td><td>'+esc(d.cat)+'</td><td>'+(d.hidden?'<span class="privtag">Hidden</span>':'<span class="pubtag">Shown</span>')+'</td><td>'+
+      '<button class="btn small" data-tab="'+t+'" onclick="editDeck(this.getAttribute(\'data-tab\'))">Edit</button> '+
+      '<button class="btn ghost small" data-tab="'+t+'" onclick="openShare(findDeck(this.getAttribute(\'data-tab\')))">Share</button></td></tr>';
+  }).join('') || '<tr><td colspan="4">No decks found.</td></tr>';
+}
+function editDeck(tab){
+  var d=findDeck(tab); if(!d) return;
+  tTab('Deck'); clearDeckForm();
+  $('dMsg').className='msg'; $('dMsg').textContent='Loading “'+d.title+'”…';
+  delete cache[d.tab];                     /* always edit the latest version from the sheet */
+  loadDeck(d, function(cards, err){
+    if(!cards){ $('dMsg').className='msg bad'; $('dMsg').textContent='This deck could not be loaded ('+err+').'; return; }
+    editingTab=d.tab;
+    $('dFromBox').style.display='none'; $('dEditing').className='editing'; $('dEditingTitle').textContent=d.title; $('dSave').textContent='Save changes';
+    $('dTitle').value=d.title; $('dWho').value=d.cat||''; $('dLevel').value=d.level||''; $('dDesc').value=d.desc||''; $('dShow').checked=!d.hidden;
+    $('edBody').innerHTML=''; cards.forEach(addRow); addRow();
+    $('dMsg').textContent='';
+    window.scrollTo(0,0);
   });
 }
 function togglePaste(){ var b=$('pasteBox'); b.className=b.className?'':'hidden'; if(!b.className) $('pasteText').focus(); }
@@ -1278,18 +1309,19 @@ function saveDeckUI(){
   if(!cards.length) { msg.textContent='Add at least one word.'; return; }
   var missing=cards.filter(function(c){ return !c.front||!c.back; }).length;
   if(missing && !confirm(missing+' word(s) have no meaning or no word. Save anyway?')) return;
-  var upd=editingTab && $('dMode').value==='update';
+  var upd=!!editingTab;
   msg.className='msg'; msg.textContent='Saving to the Google Sheet…'; $('dSave').disabled=true;
   api('saveDeck', {tab:upd?editingTab:'', title:$('dTitle').value.trim(), desc:$('dDesc').value.trim(), level:$('dLevel').value.trim(), category:$('dWho').value.trim(), show:$('dShow').checked, cards:cards}, function(r){
     $('dSave').disabled=false;
     if(!r.ok){ msg.className='msg bad'; msg.textContent=r.error||'Could not save.'; if(!ssGet('ell-fc-pin')) showTeacher(); return; }
     cache[r.tab]=cards.map(function(c){ return {front:c.front, back:c.back, ex:c.example, notes:c.notes}; });
-    msg.textContent='Saved as “'+r.tab+'”.';
+    var savedTitle=$('dTitle').value.trim(), savedDesc=$('dDesc').value.trim(), savedShow=$('dShow').checked;
+    clearDeckForm();                       /* next save always creates a NEW deck */
+    msg.className='msg'; msg.textContent=(upd?'Changes saved to “':'Saved as “')+savedTitle+'”. The form is ready for a new deck; to change a deck, use Saved decks › Edit.';
     loadContents(function(){
-      fillFromSelect(); renderDecks(); renderPackChecks();
-      var d=findDeck(r.tab) || {title:$('dTitle').value.trim(), tab:r.tab, desc:$('dDesc').value.trim(), hidden:!$('dShow').checked};
+      fillFromSelect(); renderDecks(); renderPackChecks(); renderSavedDecks();
+      var d=findDeck(r.tab) || {title:savedTitle, tab:r.tab, desc:savedDesc, hidden:!savedShow};
       if(!findDeck(r.tab)) allDecks.push(d);
-      editingTab=r.tab; $('dFrom').value=r.tab; $('dModeBox').className=''; $('dMode').value='update';
       openShare(d);
     });
   });
