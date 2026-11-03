@@ -37,7 +37,7 @@ On a deck, choose **Download ▾ › Share PDF link** (or **Share PDF link** und
 - **Learner pack:** a learner's name, an optional message and a choice of decks. Saved in the `Packs` tab. The learner gets `…/?pack=<id>`: their decks to study online or download as PDFs (one deck, or everything in one PDF). Editing a pack keeps the same link.
 - **Saved packs:** list of packs with Share and Edit.
 
-The PIN on the page only keeps learners out of the menu. The save script checks the PIN again and blocks saving for 10 minutes after 8 wrong PINs.
+The PIN on the page only keeps learners out of the menu. The save script checks the PIN again and blocks saving for 4 hours after 8 wrong PINs.
 
 ### One-time setup of the save script
 

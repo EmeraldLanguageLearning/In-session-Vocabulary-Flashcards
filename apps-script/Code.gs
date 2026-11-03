@@ -5,7 +5,7 @@
  * then deploy it as a Web app (Execute as: Me, Who has access: Anyone).
  *
  * The site sends the trainer PIN with every request; it is checked here again,
- * and too many wrong PINs block saving for 10 minutes.
+ * and 8 wrong PINs block saving for 4 hours.
  */
 
 var PIN_HASH = 2085847969;           // same trainer PIN as the Emerald-web trainer page
@@ -24,9 +24,9 @@ function doPost(e) {
     var req = JSON.parse(e.postData.contents);
     var cache = CacheService.getScriptCache();
     var fails = Number(cache.get('fails') || 0);
-    if (fails >= 8) return out({ ok: false, error: 'Too many wrong PINs. Wait 10 minutes and try again.' });
+    if (fails >= 8) return out({ ok: false, error: 'Too many wrong PINs. Saving is blocked for 4 hours.' });
     if (h(String(req.pin || '')) !== PIN_HASH) {
-      cache.put('fails', String(fails + 1), 600);
+      cache.put('fails', String(fails + 1), 14400); // 4 hours (CacheService maximum is 6 hours)
       return out({ ok: false, error: 'Wrong PIN.' });
     }
     lock.waitLock(20000);
