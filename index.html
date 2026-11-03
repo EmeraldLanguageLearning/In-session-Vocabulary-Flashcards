@@ -117,6 +117,26 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .listview em{color:var(--text)}
 .study-dl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:30px;padding-top:20px;border-top:1px solid var(--line)}
 
+/* Learner PDF page */
+.learner{max-width:560px;margin:40px auto 0;text-align:center}
+.learner .box{background:var(--bg-soft);border-radius:4px;padding:34px 26px;margin-top:20px}
+.learner h2{font-family:var(--font-head);font-weight:700;color:var(--text-strong);margin:0 0 6px;font-size:1.4rem}
+.learner .btn{font-size:1.05rem;padding:12px 26px;margin-top:16px}
+.learner .alt{display:block;margin-top:18px;font-size:.9rem}
+
+/* Share modal */
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(50,50,50,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:4px;max-width:520px;width:100%;padding:26px 24px;position:relative;max-height:92vh;overflow:auto}
+.modal h3{font-family:var(--font-head);font-weight:400;text-transform:uppercase;color:var(--emerald-dark);margin:0 0 4px;font-size:1.3rem;letter-spacing:.03em}
+.modal .x{position:absolute;top:10px;right:12px;background:none;border:0;font-size:1.6rem;color:var(--line-strong);cursor:pointer;line-height:1}
+.modal fieldset{border:0;padding:0;margin:16px 0}
+.modal legend{font-weight:600;color:var(--text-strong);margin-bottom:6px}
+.modal label{display:block;cursor:pointer;margin:4px 0}
+.modal input[type=radio]{accent-color:var(--emerald)}
+.modal .link{width:100%;border:1px solid var(--line);border-radius:4px;padding:10px;font-size:.88rem;color:var(--text-strong);background:var(--bg-soft)}
+.modal .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.modal .ok{color:var(--emerald-dark);font-size:.88rem;min-height:1.4em;margin-top:8px}
+
 /* Print */
 #printArea{display:none}
 @media print{
@@ -141,7 +161,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 <body>
 <header class="top">
   <a href="#" onclick="goHome();return false;" aria-label="All decks"><img src="logo.png" width="306" height="90" alt="Emerald Language Learning"></a>
-  <nav><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a></nav>
+  <nav id="topNav"><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a></nav>
 </header>
 
 <main class="wrap">
@@ -202,19 +222,55 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
     </div>
 
     <div class="study-dl">
+      <button class="btn small" onclick="openShare(cur.deck)">Share PDF link</button>
       <button class="btn ghost small" onclick="printDeck(cur.deck)">Print cards (PDF)</button>
       <button class="btn ghost small" onclick="downloadDeck(cur.deck,'csv')">Download CSV</button>
       <button class="btn ghost small" onclick="downloadDeck(cur.deck,'anki')">Download for Anki</button>
       <button class="btn ghost small" onclick="downloadDeck(cur.deck,'quizlet')">Download for Quizlet</button>
     </div>
   </section>
+
+  <!-- LEARNER PDF PAGE (opened from a shared ?pdf= link) -->
+  <section id="learner" class="learner hidden">
+    <h1 class="sec" style="margin-top:10px">Your vocabulary</h1>
+    <div class="box">
+      <h2 id="lTitle">Loading…</h2>
+      <p id="lDesc"></p>
+      <div id="lStatus" class="state" style="padding:10px"><div class="spinner"></div>Preparing your PDF…</div>
+      <button id="lBtn" class="btn hidden" onclick="savePdf()">Download the PDF</button>
+      <a id="lStudy" class="alt hidden" href="#">Study these words online instead</a>
+    </div>
+  </section>
 </main>
+
+<!-- SHARE MODAL -->
+<div id="shareOverlay" class="overlay hidden" onclick="if(event.target===this)closeShare()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <button class="x" onclick="closeShare()" aria-label="Close">×</button>
+    <h3 id="shTitle">Share a PDF link</h3>
+    <p id="shDeck" style="margin:0"></p>
+    <fieldset>
+      <legend>The learner gets</legend>
+      <label><input type="radio" name="shLayout" value="list" checked onchange="updateShare()"> A word list (word, meaning, example)</label>
+      <label><input type="radio" name="shLayout" value="cards" onchange="updateShare()"> Cut-out flashcards (print double-sided)</label>
+    </fieldset>
+    <input id="shLink" class="link" readonly onclick="this.select()" aria-label="Link to send">
+    <div class="row">
+      <button class="btn" onclick="copyShare()">Copy link</button>
+      <a id="shMail" class="btn ghost" href="#">Email it</a>
+      <button id="shNative" class="btn ghost hidden" onclick="nativeShare()">Share…</button>
+      <a id="shTest" class="btn ghost" href="#" target="_blank" rel="noopener">Try it</a>
+    </div>
+    <div class="ok" id="shOk"></div>
+    <p style="font-size:.8rem;margin:6px 0 0">The PDF is made from the sheet when the learner opens the link, so it always has the latest cards. Decks set to “Show: No” can still be shared this way without appearing on the home page.</p>
+  </div>
+</div>
 
 <div id="printArea"></div>
 
 <script>
 /* Written in ES5 so it also runs on old iPads. */
-var decks = [], cache = {}, cur = {deck:null, cards:[], order:[], i:0, known:0, seen:{}, flipped:false, mode:'cards'};
+var decks = [], allDecks = [], cache = {}, cur = {deck:null, cards:[], order:[], i:0, known:0, seen:{}, flipped:false, mode:'cards'};
 var ICONS = [
  '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 6V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/></svg>',
  '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
@@ -274,17 +330,19 @@ function loadContents(){
   $('homeState').className='state'; $('homeState').innerHTML='<div class="spinner"></div>Loading decks…';
   get(tabUrl(CONTENTS_TAB), function(t){
     var rows=toObjects(t);
-    decks=[];
+    allDecks=[];
     rows.forEach(function(r){
       var tab=pick(r,['tab name','tab','sheet']), show=(pick(r,['show','visible','publish'])||'yes').toLowerCase();
-      if(!tab || show==='no' || show==='n' || show==='false') return;
-      decks.push({title:pick(r,['deck title','title','deck'])||tab, tab:tab, desc:pick(r,['description','desc']), level:pick(r,['level']), cat:pick(r,['category','topic'])});
+      if(!tab) return;
+      allDecks.push({title:pick(r,['deck title','title','deck'])||tab, tab:tab, desc:pick(r,['description','desc']), level:pick(r,['level']), cat:pick(r,['category','topic']), hidden:(show==='no'||show==='n'||show==='false')});
     });
-    lsSet('ell-fc-contents',{at:Date.now(),decks:decks});
+    decks=allDecks.filter(function(d){return !d.hidden;});
+    lsSet('ell-fc-contents',{at:Date.now(),decks:allDecks});
     afterContents(false);
   }, function(err){
     var c=lsGet('ell-fc-contents');
-    if(c && c.decks){ decks=c.decks; afterContents(c.at); }
+    if(c && c.decks){ allDecks=c.decks; decks=allDecks.filter(function(d){return !d.hidden;}); afterContents(c.at); }
+    else if(learnerTab()){ showLearnerError('The vocabulary list could not be loaded. Check your internet connection and open the link again.'); }
     else showHomeError(err);
   });
 }
@@ -339,6 +397,7 @@ function renderDecks(){
         '<button onclick="downloadDeck(decks['+n+'],\'anki\')">Anki<small>File › Import, tab-separated</small></button>'+
         '<button onclick="downloadDeck(decks['+n+'],\'quizlet\')">Quizlet<small>Paste into Import: tab + new line</small></button>'+
         '<button onclick="printDeck(decks['+n+'])">PDF cut-out cards<small>Print › Save as PDF</small></button>'+
+        '<button onclick="openShare(decks['+n+'])">Share PDF link<small>A link to send to a learner</small></button>'+
       '</div></span></div></article>';
   });
   $('grid').innerHTML = html || (decks.length ? '<p class="state" style="width:100%">No deck matches your search.</p>' : '<p class="state" style="width:100%">No decks yet. Add a row to the Contents tab of the sheet.</p>');
@@ -352,23 +411,29 @@ function closeMenus(){ var ms=document.querySelectorAll('.dl-menu'); for(var i=0
 document.addEventListener('click', closeMenus);
 
 /* ---------- Routing (#deck=Tab name links straight to a deck) ---------- */
+function findDeck(tab){ for(var i=0;i<allDecks.length;i++) if(allDecks[i].tab===tab) return allDecks[i]; return null; }
 function route(){
+  var lt=learnerTab();
+  if(lt && !location.hash) return showLearner(lt);
   var m=/deck=([^&]+)/.exec(location.hash);
   if(m){
-    var tab=decodeURIComponent(m[1]);
-    for(var i=0;i<decks.length;i++) if(decks[i].tab===tab) return showDeck(decks[i]);
+    var d=findDeck(decodeURIComponent(m[1]));
+    if(d) return showDeck(d);
   }
   showHome();
 }
 window.onhashchange=function(){ if(decks.length) route(); };
 function goHome(){ if(location.hash) location.hash=''; else showHome(); }
 function openDeck(n){ location.hash='deck='+encodeURIComponent(decks[n].tab); }
-function showHome(){ $('home').className=''; $('study').className='hidden'; window.scrollTo(0,0); }
+function showHome(){
+  if(learnerTab()){ location.href=location.pathname+(/[?&]sheet=/.test(location.search)?'?sheet='+sheetId():''); return; }
+  $('home').className=''; $('study').className='hidden'; $('learner').className='learner hidden'; window.scrollTo(0,0);
+}
 function reloadAll(){ cache={}; loadContents(); }
 
 /* ---------- Study ---------- */
 function showDeck(deck){
-  $('home').className='hidden'; $('study').className=''; window.scrollTo(0,0);
+  $('home').className='hidden'; $('study').className=''; $('learner').className='learner hidden'; window.scrollTo(0,0);
   cur.deck=deck; $('deckTitle').textContent=deck.title; document.title=deck.title+' | Flashcards';
   $('modeCards').className='hidden'; $('modeList').className='hidden';
   $('studyState').className='state'; $('studyState').innerHTML='<div class="spinner"></div>Loading cards…';
@@ -517,6 +582,175 @@ function printDeck(deck){
   });
 }
 
+/* ---------- Learner PDF link: ?pdf=<Tab name>[&layout=cards] ---------- */
+function qParam(name){ var m=new RegExp('[?&]'+name+'=([^&#]*)').exec(location.search); return m?decodeURIComponent(m[1].replace(/\+/g,' ')):''; }
+function learnerTab(){ return qParam('pdf'); }
+var pdfDoc=null, pdfName='';
+var JSPDF_URLS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'];
+
+function showLearner(tab){
+  $('home').className='hidden'; $('study').className='hidden'; $('learner').className='learner';
+  $('topNav').style.display='none';
+  var deck=findDeck(tab);
+  if(!deck){ showLearnerError('This vocabulary list was not found. Please ask your trainer for a new link.'); return; }
+  document.title=deck.title+' | Your vocabulary';
+  $('lTitle').textContent=deck.title;
+  $('lDesc').textContent=deck.desc||'';
+  $('lStudy').href='#deck='+encodeURIComponent(deck.tab);
+  var layout=qParam('layout')==='cards'?'cards':'list';
+  loadDeck(deck, function(cards, err){
+    if(!cards || !cards.length){ showLearnerError('This vocabulary list is empty or could not be loaded. Please try again later.'); return; }
+    buildPdf(deck, cards, layout, function(doc, e){
+      if(!doc){ showLearnerError('The PDF could not be prepared ('+e+'). Check your internet connection and open the link again.'); return; }
+      pdfDoc=doc; pdfName=deck.title.replace(/[\\\/:*?"<>|]/g,'')+(layout==='cards'?' - flashcards':' - vocabulary')+'.pdf';
+      $('lStatus').className='state'; $('lStatus').style.padding='4px';
+      $('lStatus').innerHTML=cards.length+' words · ready to download';
+      $('lBtn').className='btn'; $('lStudy').className='alt';
+      if(!/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)){ try{ savePdf(); }catch(x){} }
+    });
+  });
+}
+function showLearnerError(msg){
+  $('home').className='hidden'; $('learner').className='learner'; $('topNav').style.display='none';
+  $('lStatus').className='err'; $('lStatus').innerHTML=esc(msg);
+}
+function savePdf(){ if(pdfDoc) pdfDoc.save(pdfName); }
+
+/* Loaders */
+function loadScriptFrom(urls, i, ok, fail){
+  if(window.jspdf && window.jspdf.jsPDF) return ok();
+  if(i>=urls.length) return fail('PDF library unavailable');
+  var s=document.createElement('script'); s.src=urls[i];
+  s.onload=function(){ (window.jspdf && window.jspdf.jsPDF) ? ok() : loadScriptFrom(urls,i+1,ok,fail); };
+  s.onerror=function(){ loadScriptFrom(urls,i+1,ok,fail); };
+  document.head.appendChild(s);
+}
+function getBase64(url, ok, fail){
+  var x=new XMLHttpRequest(); x.open('GET', url, true); x.responseType='arraybuffer';
+  x.onload=function(){
+    if(x.status!==200) return fail('missing '+url);
+    var b=new Uint8Array(x.response), s='', i, step=0x8000;
+    for(i=0;i<b.length;i+=step) s+=String.fromCharCode.apply(null, b.subarray(i,i+step));
+    ok(btoa(s));
+  };
+  x.onerror=function(){ fail('network'); }; x.send();
+}
+var pdfAssets=null;
+function loadPdfAssets(ok, fail){
+  if(pdfAssets) return ok(pdfAssets);
+  loadScriptFrom(JSPDF_URLS, 0, function(){
+    var files={reg:'fonts/Sans-Regular.ttf', bold:'fonts/Sans-Bold.ttf', ital:'fonts/Sans-Italic.ttf', logo:'logo.png'}, keys=Object.keys(files), got={}, left=keys.length, failed=false;
+    keys.forEach(function(k){ getBase64(files[k], function(b){ got[k]=b; if(--left===0 && !failed){ pdfAssets=got; ok(got); } }, function(e){ if(!failed){ failed=true; fail(e); } }); });
+  }, fail);
+}
+
+/* Build the PDF (A4, mm) */
+function buildPdf(deck, cards, layout, cb){
+  loadPdfAssets(function(a){
+    try{
+      var doc=new window.jspdf.jsPDF({unit:'mm', format:'a4', compress:true});
+      doc.addFileToVFS('Sans-Regular.ttf', a.reg); doc.addFont('Sans-Regular.ttf','Sans','normal');
+      doc.addFileToVFS('Sans-Bold.ttf', a.bold); doc.addFont('Sans-Bold.ttf','Sans','bold');
+      doc.addFileToVFS('Sans-Italic.ttf', a.ital); doc.addFont('Sans-Italic.ttf','Sans','italic');
+      doc.setProperties({title:deck.title, subject:'Vocabulary', author:'Emerald Language Learning', creator:'Emerald Language Learning flashcards'});
+      if(layout==='cards') pdfCards(doc, deck, cards, a); else pdfList(doc, deck, cards, a);
+      cb(doc);
+    }catch(e){ cb(null, e.message||e); }
+  }, function(e){ cb(null, e); });
+}
+var C_DARK=[69,120,101], C_EM=[73,177,144], C_SOFT=[114,177,160], C_TXT=[50,50,50], C_GREY=[119,119,119], C_LINE=[218,218,218];
+function lh(pt){ return pt*0.3528*1.3; }
+function pdfFooter(doc, deck){
+  var n=doc.getNumberOfPages(), i;
+  for(i=1;i<=n;i++){
+    doc.setPage(i); doc.setFont('Sans','normal'); doc.setFontSize(8); doc.setTextColor(C_GREY[0],C_GREY[1],C_GREY[2]);
+    doc.text('Emerald Language Learning · '+deck.title, 18, 289);
+    doc.text('Page '+i+' / '+n, 192, 289, {align:'right'});
+  }
+}
+function pdfList(doc, deck, cards, a){
+  var M=18, W=174, colF=52, xB=M+colF+6, wB=W-colF-6, y, bottom=280;
+  doc.addImage('data:image/png;base64,'+a.logo, 'PNG', M, 14, 40.8, 12);
+  doc.setDrawColor(C_LINE[0],C_LINE[1],C_LINE[2]); doc.setLineWidth(0.3); doc.line(M, 31, M+W, 31);
+  doc.setFont('Sans','bold'); doc.setFontSize(20); doc.setTextColor(C_DARK[0],C_DARK[1],C_DARK[2]);
+  var tl=doc.splitTextToSize(deck.title.toUpperCase(), W); doc.text(tl, M, 43); y=43+(tl.length-1)*lh(20);
+  var meta=[deck.cat, deck.level, cards.length+' words'].filter(Boolean).join('  ·  ');
+  doc.setFont('Sans','normal'); doc.setFontSize(9.5); doc.setTextColor(C_SOFT[0],C_SOFT[1],C_SOFT[2]); y+=7; doc.text(meta, M, y);
+  if(deck.desc){ doc.setTextColor(C_GREY[0],C_GREY[1],C_GREY[2]); doc.setFontSize(10); var dl=doc.splitTextToSize(deck.desc, W); y+=6; doc.text(dl, M, y); y+=(dl.length-1)*lh(10); }
+  y+=9;
+  function head(){
+    doc.setFillColor(C_EM[0],C_EM[1],C_EM[2]); doc.rect(M, y-5, W, 7.5, 'F');
+    doc.setFont('Sans','bold'); doc.setFontSize(9.5); doc.setTextColor(255,255,255);
+    doc.text('WORD', M+2.5, y); doc.text('MEANING AND EXAMPLE', xB, y); y+=8;
+  }
+  head();
+  cards.forEach(function(c){
+    doc.setFont('Sans','bold'); doc.setFontSize(11.5); var fl=doc.splitTextToSize(c.front||'', colF-2.5);
+    doc.setFont('Sans','normal'); doc.setFontSize(10.5); var bl=doc.splitTextToSize(c.back||'', wB);
+    doc.setFont('Sans','italic'); doc.setFontSize(9.5); var el=c.ex?doc.splitTextToSize(c.ex, wB):[];
+    doc.setFont('Sans','normal'); doc.setFontSize(8.8); var nl=c.notes?doc.splitTextToSize(c.notes, wB):[];
+    var hB=bl.length*lh(10.5)+(el.length?1.2+el.length*lh(9.5):0)+(nl.length?1+nl.length*lh(8.8):0);
+    var h=Math.max(fl.length*lh(11.5), hB)+4;
+    if(y+h>bottom){ doc.addPage(); y=20; doc.setFont('Sans','bold'); doc.setFontSize(10); doc.setTextColor(C_DARK[0],C_DARK[1],C_DARK[2]); doc.text(deck.title.toUpperCase()+' (continued)', M, y); y+=9; head(); }
+    var top=y;
+    doc.setFont('Sans','bold'); doc.setFontSize(11.5); doc.setTextColor(C_TXT[0],C_TXT[1],C_TXT[2]); doc.text(fl, M+2.5, top);
+    doc.setFont('Sans','normal'); doc.setFontSize(10.5); doc.setTextColor(C_TXT[0],C_TXT[1],C_TXT[2]); doc.text(bl, xB, top);
+    var yy=top+bl.length*lh(10.5);
+    if(el.length){ yy+=1.2; doc.setFont('Sans','italic'); doc.setFontSize(9.5); doc.setTextColor(C_GREY[0],C_GREY[1],C_GREY[2]); doc.text(el, xB, yy); yy+=el.length*lh(9.5); }
+    if(nl.length){ yy+=1; doc.setFont('Sans','normal'); doc.setFontSize(8.8); doc.setTextColor(C_DARK[0],C_DARK[1],C_DARK[2]); doc.text(nl, xB, yy); }
+    y=top+h;
+    doc.setDrawColor(C_LINE[0],C_LINE[1],C_LINE[2]); doc.setLineWidth(0.2); doc.line(M, y-4.2, M+W, y-4.2);
+  });
+  pdfFooter(doc, deck);
+}
+function pdfCards(doc, deck, cards, a){
+  var X0=10, Y0=10, CW=95, CH=69.25, per=8, p, k, idx, slot, first=true;
+  function cell(k){ return {x:X0+(k%2)*CW, y:Y0+Math.floor(k/2)*CH}; }
+  function frame(k){ var c=cell(k); doc.setDrawColor(187,187,187); doc.setLineWidth(0.2); if(doc.setLineDashPattern) doc.setLineDashPattern([1.2,1.2],0); doc.rect(c.x,c.y,CW,CH); if(doc.setLineDashPattern) doc.setLineDashPattern([],0); return c; }
+  function block(c, parts){
+    var total=0; parts.forEach(function(pt){ doc.setFont('Sans',pt.f); doc.setFontSize(pt.s); pt.l=doc.splitTextToSize(pt.t, CW-14); total+=pt.l.length*lh(pt.s)+(pt.gap||0); });
+    var y=c.y+CH/2-total/2+lh(parts[0].s)*0.75;
+    parts.forEach(function(pt){ y+=pt.gap||0; doc.setFont('Sans',pt.f); doc.setFontSize(pt.s); doc.setTextColor(pt.c[0],pt.c[1],pt.c[2]); doc.text(pt.l, c.x+CW/2, y, {align:'center'}); y+=pt.l.length*lh(pt.s); });
+  }
+  function tag(c){ doc.setFont('Sans','normal'); doc.setFontSize(6.5); doc.setTextColor(C_SOFT[0],C_SOFT[1],C_SOFT[2]); doc.text(deck.title.toUpperCase(), c.x+CW-4, c.y+CH-3, {align:'right'}); }
+  for(p=0;p<cards.length;p+=per){
+    if(!first) doc.addPage(); first=false;
+    for(k=0;k<per;k++){ idx=p+k; if(idx>=cards.length) continue; var c=frame(k); block(c,[{t:cards[idx].front,f:'bold',s:16,c:C_TXT}]); tag(c); }
+    doc.addPage();
+    for(k=0;k<per;k++){ slot=Math.floor(k/2)*2+(1-k%2); idx=p+slot; if(idx>=cards.length) continue; var b=cards[idx], cb=frame(k), parts=[{t:b.back,f:'normal',s:11,c:C_TXT}];
+      if(b.ex) parts.push({t:b.ex,f:'italic',s:9,c:C_GREY,gap:2.5}); if(b.notes) parts.push({t:b.notes,f:'normal',s:8,c:C_DARK,gap:1.5}); block(cb, parts); }
+  }
+  var n=doc.getNumberOfPages(), i;
+  for(i=1;i<=n;i++){ doc.setPage(i); doc.setFont('Sans','normal'); doc.setFontSize(7.5); doc.setTextColor(C_GREY[0],C_GREY[1],C_GREY[2]);
+    doc.text((i%2?'Fronts':'Backs')+' · print double-sided, flip on long edge · '+deck.title+' · Emerald Language Learning', 105, 291, {align:'center'}); }
+}
+
+/* ---------- Share modal (trainer) ---------- */
+var shareDeck=null;
+function openShare(deck){ closeMenus(); shareDeck=deck; $('shDeck').textContent=deck.title; $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=navigator.share?'btn ghost':'btn ghost hidden'; updateShare(); }
+function closeShare(){ $('shareOverlay').className='overlay hidden'; }
+function shareLayout(){ var r=document.getElementsByName('shLayout'); for(var i=0;i<r.length;i++) if(r[i].checked) return r[i].value; return 'list'; }
+function shareUrl(){
+  var base=location.protocol+'//'+location.host+location.pathname, q='?pdf='+encodeURIComponent(shareDeck.tab);
+  if(shareLayout()==='cards') q+='&layout=cards';
+  if(/[?&]sheet=/.test(location.search)) q+='&sheet='+sheetId();
+  return base+q;
+}
+function updateShare(){
+  var u=shareUrl(), t=shareDeck.title;
+  $('shLink').value=u; $('shTest').href=u;
+  $('shMail').href='mailto:?subject='+encodeURIComponent('Your vocabulary: '+t)+'&body='+encodeURIComponent('Hello,\n\nHere is the vocabulary from our session ('+t+'). Open this link to download it as a PDF:\n'+u+'\n\nSee you soon!');
+}
+function copyShare(){
+  var u=$('shLink').value;
+  function done(){ $('shOk').textContent='Link copied. Paste it into an email or message.'; }
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(u).then(done, legacy); } else legacy();
+  function legacy(){ var f=$('shLink'); f.focus(); f.select(); try{ f.setSelectionRange(0,9999); }catch(e){} try{ if(document.execCommand('copy')) done(); else $('shOk').textContent='Select the link above and copy it.'; }catch(e){ $('shOk').textContent='Select the link above and copy it.'; } }
+}
+function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+shareDeck.title, text:'Download the vocabulary from our session as a PDF:', url:shareUrl()}); }catch(e){} }
+document.addEventListener('keydown', function(e){ if(e.keyCode===27) closeShare(); });
+
+if(learnerTab() && !location.hash){ $('home').className='hidden'; $('learner').className='learner'; $('topNav').style.display='none'; }
 loadContents();
 </script>
 </body>

@@ -20,6 +20,15 @@ The site reads it every time it opens, so editing the sheet is enough: no change
 
 To switch permanently to another sheet, change `SHEET_ID` near the top of `index.html`.
 
+## Sharing a PDF with a learner
+
+On a deck, choose **Download ▾ › Share PDF link** (or **Share PDF link** under the deck). Pick a word list or cut-out flashcards, then copy, email or share the link.
+
+- Link format: `…/In-session-Vocabulary-Flashcards/?pdf=<Tab name>` (add `&layout=cards` for cut-out cards).
+- When the learner opens it, the page builds the PDF from the sheet in their browser and downloads it (on iPad/iPhone they tap "Download the PDF").
+- Works for decks set to `Show: No`, so you can keep per-group session vocabulary off the home page and still send it.
+- The PDF library (jsPDF 2.5.1) loads from a public CDN (cdnjs, with jsDelivr and unpkg as fallbacks); the fonts in `fonts/` are a subset of DejaVu Sans so phonetic symbols print correctly.
+
 ## Printing
 
 "Print" makes A4 pages with 8 cards: a page of fronts followed by a page of backs. Print double-sided (flip on long edge) and cut along the dashed lines. In the print dialog choose "Save as PDF" to get a PDF.
