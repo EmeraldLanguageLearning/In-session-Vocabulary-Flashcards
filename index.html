@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flashcards | Emerald Language Learning</title>
+<meta name="description" content="English flashcards from Emerald Language Learning: study online, print or download.">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flashcards">
+<meta name="theme-color" content="#49B190">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script>
+/* ===== SETTINGS: the only thing to change if you use another Google Sheet ===== */
+var SHEET_ID = "1KTx7_WW-YiZON8G3uuHCsYfM1cpfjtoRaV1mL3LaNa4";
+var CONTENTS_TAB = "Contents";
+</script>
+<style>
+:root{
+  --emerald:#49B190;--emerald-link:#53AC90;--emerald-dark:#457865;--emerald-soft:#72B1A0;--emerald-hover:#3f9c7e;
+  --text-strong:#323232;--text:#777;--bg:#fff;--bg-soft:#F9F9F9;--line:#DADADA;--line-strong:#BBB;
+  --font-head:'Montserrat',sans-serif;--font-body:'Open Sans',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--text);background:var(--bg);line-height:1.7;-webkit-text-size-adjust:100%}
+button,select,input{font-family:inherit;font-size:1rem}
+a{color:var(--emerald-link)}
+.hidden{display:none!important}
+
+/* Header */
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 5%;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:20}
+.top img{height:60px;width:auto;display:block}
+.top nav a{font-family:var(--font-body);color:var(--text);text-decoration:none;margin-left:22px;font-weight:600;font-size:.95rem;cursor:pointer}
+.top nav a.active,.top nav a:hover{color:var(--emerald-link)}
+@media (max-width:600px){.top img{height:44px}.top nav a{margin-left:14px;font-size:.88rem}}
+
+.wrap{width:90%;max-width:1080px;margin:0 auto;padding-bottom:60px}
+h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;color:var(--emerald-dark);text-align:center;font-size:clamp(2rem,6vw,3.4rem);letter-spacing:.04em;line-height:1.2;margin:48px 0 10px}
+.lead{text-align:center;max-width:640px;margin:0 auto 34px}
+
+/* Buttons */
+.btn{display:inline-block;background:var(--emerald);color:#fff;border:1px solid var(--emerald);border-radius:4px;padding:9px 18px;cursor:pointer;font-weight:600;text-decoration:none;line-height:1.3;-webkit-appearance:none}
+.btn:hover{background:var(--emerald-hover);border-color:var(--emerald-hover)}
+.btn.ghost{background:#fff;color:var(--emerald-dark);border-color:var(--emerald)}
+.btn.ghost:hover{background:var(--bg-soft)}
+.btn.small{padding:6px 12px;font-size:.88rem}
+.btn[disabled]{opacity:.45;cursor:default}
+
+/* Filters */
+.filters{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:40px}
+.filters input,.filters select{border:1px solid var(--line);border-radius:4px;padding:9px 12px;color:var(--text-strong);background:#fff;min-width:180px}
+.filters input:focus,.filters select:focus{outline:2px solid var(--emerald-soft);border-color:var(--emerald)}
+
+/* Deck cards */
+.grid{display:-webkit-box;display:flex;flex-wrap:wrap;margin:0 -14px}
+.deck{width:calc(33.333% - 28px);margin:56px 14px 0;background:var(--bg-soft);border-radius:4px;padding:64px 22px 24px;text-align:center;position:relative;display:flex;flex-direction:column}
+@media (max-width:900px){.deck{width:calc(50% - 28px)}}
+@media (max-width:600px){.deck{width:calc(100% - 28px)}}
+.deck .circ{position:absolute;top:-44px;left:50%;margin-left:-44px;width:88px;height:88px;border-radius:50%;background:var(--emerald);display:flex;align-items:center;justify-content:center}
+.deck .circ svg{width:40px;height:40px}
+.deck h2{font-family:var(--font-head);font-weight:700;color:var(--text-strong);font-size:1.15rem;margin:0 0 6px}
+.deck .meta{font-size:.8rem;color:var(--emerald-soft);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.deck p{margin:0 0 18px;line-height:1.9;flex:1}
+.deck .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.dl{position:relative;display:inline-block}
+.dl-menu{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.08);min-width:230px;z-index:10;text-align:left;padding:6px 0}
+.dl-menu button{display:block;width:100%;background:none;border:0;padding:9px 14px;text-align:left;cursor:pointer;color:var(--text-strong)}
+.dl-menu button small{display:block;color:var(--text);font-size:.78rem}
+.dl-menu button:hover{background:var(--bg-soft);color:var(--emerald-link)}
+
+.state{text-align:center;padding:40px 10px}
+.spinner{width:38px;height:38px;border:4px solid var(--line);border-top-color:var(--emerald);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite;-webkit-animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@-webkit-keyframes spin{to{-webkit-transform:rotate(360deg)}}
+.err{background:#fff6f4;border:1px solid #f1cfc6;border-radius:4px;color:#8a4b3c;padding:16px 20px;max-width:640px;margin:20px auto;text-align:left}
+.note{font-size:.8rem;text-align:center;margin-top:40px}
+
+/* Study view */
+.study-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:28px 0 8px}
+.study-head h1{font-family:var(--font-head);font-weight:400;text-transform:uppercase;color:var(--emerald-dark);font-size:clamp(1.4rem,4vw,2.2rem);margin:0;letter-spacing:.03em}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:10px 0 24px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 0;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:-1px}
+.tabs button.on{color:var(--emerald-link);border-bottom-color:var(--emerald)}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.progress div{height:100%;background:var(--emerald);width:0;transition:width .3s}
+.counter{text-align:center;font-size:.9rem;margin-bottom:14px}
+.scene{-webkit-perspective:1400px;perspective:1400px;max-width:640px;margin:0 auto;height:340px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+@media (max-width:600px){.scene{height:300px}}
+.card{position:relative;width:100%;height:100%;-webkit-transition:-webkit-transform .5s;transition:transform .5s;-webkit-transform-style:preserve-3d;transform-style:preserve-3d}
+.card.flipped{-webkit-transform:rotateY(180deg);transform:rotateY(180deg)}
+.face{position:absolute;top:0;left:0;right:0;bottom:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;overflow:auto}
+.face.front{background:var(--bg-soft);border:1px solid var(--line)}
+.face.back{background:#fff;border:2px solid var(--emerald);-webkit-transform:rotateY(180deg);transform:rotateY(180deg)}
+.face .lbl{position:absolute;top:12px;left:16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--emerald-soft);font-weight:600}
+.face .main{font-family:var(--font-head);font-weight:700;color:var(--text-strong);font-size:clamp(1.3rem,4.5vw,2.1rem);line-height:1.35}
+.face.back .main{font-weight:400;font-size:clamp(1.05rem,3.4vw,1.45rem)}
+.face .ex{margin-top:16px;font-style:italic;color:var(--text)}
+.face .nt{margin-top:10px;font-size:.85rem;color:var(--emerald-dark)}
+.face img{max-width:100%;max-height:150px;margin-bottom:14px;border-radius:4px}
+.hint{text-align:center;font-size:.8rem;margin:10px 0 16px}
+.controls{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:6px}
+.controls .btn{min-width:110px}
+.btn.again{background:#fff;color:#b5654f;border-color:#d9a596}
+.btn.again:hover{background:#fff6f4}
+.opts{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;margin-top:22px;font-size:.9rem}
+.opts label{cursor:pointer}
+.opts input{accent-color:var(--emerald)}
+.done{text-align:center;max-width:520px;margin:30px auto;background:var(--bg-soft);border-radius:4px;padding:30px}
+.done h2{font-family:var(--font-head);color:var(--text-strong);margin:0 0 8px}
+.listview{width:100%;border-collapse:collapse;font-size:.95rem}
+.listview th{font-family:var(--font-head);text-align:left;color:var(--text-strong);border-bottom:2px solid var(--emerald);padding:8px}
+.listview td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+.listview td:first-child{font-weight:600;color:var(--text-strong)}
+.listview em{color:var(--text)}
+.study-dl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:30px;padding-top:20px;border-top:1px solid var(--line)}
+
+/* Print */
+#printArea{display:none}
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{display:block;position:absolute;left:0;top:0;width:100%}
+  .top,.wrap{display:none}
+}
+.psheet{width:190mm;height:277mm;display:flex;flex-wrap:wrap;align-content:flex-start;page-break-after:always;break-after:page}
+.psheet:last-child{page-break-after:auto;break-after:auto}
+.pcard{width:95mm;height:69.25mm;border:1px dashed #bbb;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6mm;position:relative;overflow:hidden;font-family:'Open Sans',sans-serif;color:#444}
+.pcard.blank{border-color:transparent}
+.pcard .pt{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15pt;color:#222}
+.pcard .pb{font-size:11pt;color:#333}
+.pcard .pe{font-size:9pt;font-style:italic;margin-top:3mm;color:#666}
+.pcard .pn{font-size:8pt;margin-top:2mm;color:#457865}
+.pcard .tag{position:absolute;bottom:2.5mm;right:4mm;font-size:6.5pt;color:#72B1A0;text-transform:uppercase;letter-spacing:.06em}
+.pcard img{max-width:60mm;max-height:30mm;margin-bottom:3mm}
+</style>
+</head>
+<body>
+<header class="top">
+  <a href="#" onclick="goHome();return false;" aria-label="All decks"><img src="logo.png" width="306" height="90" alt="Emerald Language Learning"></a>
+  <nav><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a></nav>
+</header>
+
+<main class="wrap">
+  <!-- HOME -->
+  <section id="home">
+    <h1 class="sec">Flashcards</h1>
+    <p class="lead">Pick a deck to study online, print it as cut-out cards, or download it for Anki, Quizlet or a spreadsheet.</p>
+    <div class="filters" id="filters">
+      <input id="q" type="search" placeholder="Search decks" aria-label="Search decks" oninput="renderDecks()">
+      <select id="fCat" aria-label="Category" onchange="renderDecks()"><option value="">All categories</option></select>
+      <select id="fLvl" aria-label="Level" onchange="renderDecks()"><option value="">All levels</option></select>
+    </div>
+    <div id="homeState" class="state"><div class="spinner"></div>Loading decks…</div>
+    <div class="grid" id="grid"></div>
+    <p class="note" id="updated"></p>
+  </section>
+
+  <!-- STUDY -->
+  <section id="study" class="hidden">
+    <div class="study-head">
+      <h1 id="deckTitle"></h1>
+      <button class="btn ghost small" onclick="goHome()">← All decks</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button id="tabCards" class="on" role="tab" onclick="setMode('cards')">Cards</button>
+      <button id="tabList" role="tab" onclick="setMode('list')">Word list</button>
+    </div>
+    <div id="studyState" class="state hidden"></div>
+
+    <div id="modeCards">
+      <div class="progress"><div id="bar"></div></div>
+      <div class="counter" id="counter"></div>
+      <div id="cardBox">
+        <div class="scene" id="scene" onclick="flip()" role="button" tabindex="0" aria-label="Flip card">
+          <div class="card" id="card">
+            <div class="face front"><span class="lbl" id="lblFront">Front</span><div id="frontBody"></div></div>
+            <div class="face back"><span class="lbl" id="lblBack">Back</span><div id="backBody"></div></div>
+          </div>
+        </div>
+        <p class="hint">Tap the card to turn it over. Keyboard: space to flip, ← → to move.</p>
+        <div class="controls">
+          <button class="btn ghost" onclick="prev()">← Previous</button>
+          <button class="btn again" onclick="mark(false)">Again</button>
+          <button class="btn" onclick="mark(true)">I knew it</button>
+          <button class="btn ghost" onclick="next()">Next →</button>
+        </div>
+        <div class="opts">
+          <label><input type="checkbox" id="optShuffle" onchange="restart()"> Shuffle</label>
+          <label><input type="checkbox" id="optReverse" onchange="restart()"> Show the back first</label>
+          <label><input type="checkbox" id="optExample" checked onchange="renderCard()"> Show examples</label>
+        </div>
+      </div>
+      <div id="doneBox" class="done hidden"></div>
+    </div>
+
+    <div id="modeList" class="hidden">
+      <table class="listview"><thead><tr><th>Front</th><th>Back</th></tr></thead><tbody id="listBody"></tbody></table>
+    </div>
+
+    <div class="study-dl">
+      <button class="btn ghost small" onclick="printDeck(cur.deck)">Print cards (PDF)</button>
+      <button class="btn ghost small" onclick="downloadDeck(cur.deck,'csv')">Download CSV</button>
+      <button class="btn ghost small" onclick="downloadDeck(cur.deck,'anki')">Download for Anki</button>
+      <button class="btn ghost small" onclick="downloadDeck(cur.deck,'quizlet')">Download for Quizlet</button>
+    </div>
+  </section>
+</main>
+
+<div id="printArea"></div>
+
+<script>
+/* Written in ES5 so it also runs on old iPads. */
+var decks = [], cache = {}, cur = {deck:null, cards:[], order:[], i:0, known:0, seen:{}, flipped:false, mode:'cards'};
+var ICONS = [
+ '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 6V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/></svg>',
+ '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
+ '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+];
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+/* ---------- Google Sheets loading ---------- */
+function sheetId(){ var m=/[?&]sheet=([\w-]+)/.exec(location.search); return m?m[1]:SHEET_ID; }
+function tabUrl(tab){
+  return 'https://docs.google.com/spreadsheets/d/'+sheetId()+'/gviz/tq?tqx=out:csv&headers=1&sheet='+encodeURIComponent(tab)+'&_='+Date.now();
+}
+function get(url, ok, fail){
+  var x = new XMLHttpRequest();
+  x.open('GET', url, true);
+  x.timeout = 20000;
+  x.onload = function(){
+    var t = x.responseText || '';
+    if (x.status>=200 && x.status<300 && !/^\s*<(!DOCTYPE|html)/i.test(t)) ok(t); else fail(x.status||'blocked');
+  };
+  x.onerror = function(){ fail('network'); };
+  x.ontimeout = function(){ fail('timeout'); };
+  x.send();
+}
+function parseCSV(text){
+  var rows=[], row=[], f='', q=false, i, c;
+  for(i=0;i<text.length;i++){
+    c=text.charAt(i);
+    if(q){
+      if(c==='"'){ if(text.charAt(i+1)==='"'){f+='"';i++;} else q=false; }
+      else f+=c;
+    } else if(c==='"') q=true;
+    else if(c===','){row.push(f);f='';}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}
+    else if(c!=='\r') f+=c;
+  }
+  if(f!==''||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function toObjects(text){
+  var rows=parseCSV(text); if(!rows.length) return [];
+  var head=rows[0].map(function(h){return h.trim().toLowerCase();}), out=[], r, o, j, any;
+  for(r=1;r<rows.length;r++){
+    o={}; any=false;
+    for(j=0;j<head.length;j++){ o[head[j]]=(rows[r][j]||'').trim(); if(o[head[j]]) any=true; }
+    if(any) out.push(o);
+  }
+  return out;
+}
+function pick(o, names){ for(var i=0;i<names.length;i++){ if(o[names[i]]) return o[names[i]]; } return ''; }
+
+function loadContents(){
+  $('homeState').className='state'; $('homeState').innerHTML='<div class="spinner"></div>Loading decks…';
+  get(tabUrl(CONTENTS_TAB), function(t){
+    var rows=toObjects(t);
+    decks=[];
+    rows.forEach(function(r){
+      var tab=pick(r,['tab name','tab','sheet']), show=(pick(r,['show','visible','publish'])||'yes').toLowerCase();
+      if(!tab || show==='no' || show==='n' || show==='false') return;
+      decks.push({title:pick(r,['deck title','title','deck'])||tab, tab:tab, desc:pick(r,['description','desc']), level:pick(r,['level']), cat:pick(r,['category','topic'])});
+    });
+    lsSet('ell-fc-contents',{at:Date.now(),decks:decks});
+    afterContents(false);
+  }, function(err){
+    var c=lsGet('ell-fc-contents');
+    if(c && c.decks){ decks=c.decks; afterContents(c.at); }
+    else showHomeError(err);
+  });
+}
+function showHomeError(err){
+  $('homeState').className='err';
+  $('homeState').innerHTML='<b>The decks could not be loaded.</b><br>Check that you are online, and that the Google Sheet is shared as “Anyone with the link can view” and has a tab called “'+esc(CONTENTS_TAB)+'”. ('+esc(err)+')';
+}
+function afterContents(offlineAt){
+  $('homeState').className='state hidden';
+  fillFilter('fCat', decks.map(function(d){return d.cat;}), 'All categories');
+  fillFilter('fLvl', decks.map(function(d){return d.level;}), 'All levels');
+  $('updated').innerHTML = offlineAt ? 'Offline: showing the decks saved on '+new Date(offlineAt).toLocaleString()+'.' : 'Updated from the Google Sheet just now.';
+  renderDecks();
+  route();
+}
+function fillFilter(id, vals, label){
+  var sel=$(id), keep=sel.value, seen={}, html='<option value="">'+label+'</option>';
+  vals.forEach(function(v){ if(v && !seen[v]){ seen[v]=1; html+='<option>'+esc(v)+'</option>'; } });
+  sel.innerHTML=html; sel.value=keep;
+  sel.style.display = Object.keys(seen).length>1 ? '' : 'none';
+}
+function loadDeck(deck, cb){
+  if(cache[deck.tab]) return cb(cache[deck.tab]);
+  get(tabUrl(deck.tab), function(t){
+    var cards=[];
+    toObjects(t).forEach(function(r){
+      var f=pick(r,['front','term','word','question']), b=pick(r,['back','definition','meaning','answer']);
+      if(f||b) cards.push({front:f, back:b, ex:pick(r,['example','examples','sentence']), notes:pick(r,['notes','note','tip']), img:pick(r,['image','picture','image url'])});
+    });
+    cache[deck.tab]=cards; lsSet('ell-fc-deck-'+deck.tab, cards); cb(cards);
+  }, function(err){
+    var c=lsGet('ell-fc-deck-'+deck.tab);
+    if(c){ cache[deck.tab]=c; cb(c); } else cb(null, err);
+  });
+}
+
+/* ---------- Home ---------- */
+function renderDecks(){
+  var q=$('q').value.toLowerCase(), fc=$('fCat').value, fl=$('fLvl').value, html='';
+  decks.forEach(function(d, n){
+    if(fc && d.cat!==fc) return; if(fl && d.level!==fl) return;
+    if(q && (d.title+' '+d.desc+' '+d.cat).toLowerCase().indexOf(q)<0) return;
+    var meta=[d.cat,d.level].filter(Boolean).join(' · ');
+    html+='<article class="deck"><div class="circ">'+ICONS[n%ICONS.length]+'</div>'+
+      '<h2>'+esc(d.title)+'</h2>'+(meta?'<div class="meta">'+esc(meta)+'</div>':'')+
+      '<p>'+esc(d.desc)+'</p><div class="acts">'+
+      '<button class="btn" onclick="openDeck('+n+')">Study</button>'+
+      '<button class="btn ghost" onclick="printDeck(decks['+n+'])">Print</button>'+
+      '<span class="dl"><button class="btn ghost" onclick="toggleMenu(event,'+n+')">Download ▾</button>'+
+      '<div class="dl-menu hidden" id="menu'+n+'">'+
+        '<button onclick="downloadDeck(decks['+n+'],\'csv\')">CSV<small>Excel, Google Sheets, Numbers</small></button>'+
+        '<button onclick="downloadDeck(decks['+n+'],\'anki\')">Anki<small>File › Import, tab-separated</small></button>'+
+        '<button onclick="downloadDeck(decks['+n+'],\'quizlet\')">Quizlet<small>Paste into Import: tab + new line</small></button>'+
+        '<button onclick="printDeck(decks['+n+'])">PDF cut-out cards<small>Print › Save as PDF</small></button>'+
+      '</div></span></div></article>';
+  });
+  $('grid').innerHTML = html || (decks.length ? '<p class="state" style="width:100%">No deck matches your search.</p>' : '<p class="state" style="width:100%">No decks yet. Add a row to the Contents tab of the sheet.</p>');
+}
+function toggleMenu(e, n){
+  e.stopPropagation();
+  var m=$('menu'+n), open=m.className.indexOf('hidden')>=0;
+  closeMenus(); if(open) m.className='dl-menu';
+}
+function closeMenus(){ var ms=document.querySelectorAll('.dl-menu'); for(var i=0;i<ms.length;i++) ms[i].className='dl-menu hidden'; }
+document.addEventListener('click', closeMenus);
+
+/* ---------- Routing (#deck=Tab name links straight to a deck) ---------- */
+function route(){
+  var m=/deck=([^&]+)/.exec(location.hash);
+  if(m){
+    var tab=decodeURIComponent(m[1]);
+    for(var i=0;i<decks.length;i++) if(decks[i].tab===tab) return showDeck(decks[i]);
+  }
+  showHome();
+}
+window.onhashchange=function(){ if(decks.length) route(); };
+function goHome(){ if(location.hash) location.hash=''; else showHome(); }
+function openDeck(n){ location.hash='deck='+encodeURIComponent(decks[n].tab); }
+function showHome(){ $('home').className=''; $('study').className='hidden'; window.scrollTo(0,0); }
+function reloadAll(){ cache={}; loadContents(); }
+
+/* ---------- Study ---------- */
+function showDeck(deck){
+  $('home').className='hidden'; $('study').className=''; window.scrollTo(0,0);
+  cur.deck=deck; $('deckTitle').textContent=deck.title; document.title=deck.title+' | Flashcards';
+  $('modeCards').className='hidden'; $('modeList').className='hidden';
+  $('studyState').className='state'; $('studyState').innerHTML='<div class="spinner"></div>Loading cards…';
+  loadDeck(deck, function(cards, err){
+    if(!cards){ $('studyState').className='err'; $('studyState').innerHTML='<b>This deck could not be loaded.</b><br>Check that the sheet has a tab called “'+esc(deck.tab)+'”. ('+esc(err)+')'; return; }
+    if(!cards.length){ $('studyState').className='state'; $('studyState').innerHTML='This deck has no cards yet.'; return; }
+    $('studyState').className='state hidden';
+    cur.cards=cards; restart(); renderList(); setMode(cur.mode);
+  });
+}
+function setMode(m){
+  cur.mode=m;
+  $('tabCards').className=m==='cards'?'on':''; $('tabList').className=m==='list'?'on':'';
+  if(!cur.cards.length) return;
+  $('modeCards').className=m==='cards'?'':'hidden'; $('modeList').className=m==='list'?'':'hidden';
+}
+function restart(){
+  var o=[], i, j, t;
+  for(i=0;i<cur.cards.length;i++) o.push(i);
+  if($('optShuffle').checked) for(i=o.length-1;i>0;i--){ j=Math.floor(Math.random()*(i+1)); t=o[i]; o[i]=o[j]; o[j]=t; }
+  cur.order=o; cur.i=0; cur.known=0; cur.seen={}; cur.again=[];
+  $('doneBox').className='done hidden'; $('cardBox').className='';
+  renderCard();
+}
+function faceHTML(c, side){
+  var showEx=$('optExample').checked, h='';
+  if(side==='front'){
+    if(c.img) h+='<img src="'+esc(c.img)+'" alt="">';
+    h+='<div class="main">'+esc(c.front)+'</div>';
+  } else {
+    h+='<div class="main">'+esc(c.back)+'</div>';
+    if(showEx && c.ex) h+='<div class="ex">'+esc(c.ex)+'</div>';
+    if(showEx && c.notes) h+='<div class="nt">'+esc(c.notes)+'</div>';
+  }
+  return h;
+}
+function renderCard(){
+  if(!cur.cards.length) return;
+  var c=cur.cards[cur.order[cur.i]], rev=$('optReverse').checked;
+  cur.flipped=false; $('card').className='card';
+  setTimeout(function(){
+    $('frontBody').innerHTML=faceHTML(c, rev?'back':'front');
+    $('backBody').innerHTML=faceHTML(c, rev?'front':'back');
+    $('lblFront').textContent=rev?'Meaning':'Word'; $('lblBack').textContent=rev?'Word':'Meaning';
+  }, cur.i===0?0:120);
+  $('counter').textContent='Card '+(cur.i+1)+' of '+cur.order.length+'   ·   Known: '+cur.known;
+  $('bar').style.width=(100*cur.i/cur.order.length)+'%';
+}
+function flip(){ cur.flipped=!cur.flipped; $('card').className='card'+(cur.flipped?' flipped':''); }
+function next(){ if(cur.i<cur.order.length-1){ cur.i++; renderCard(); } else finish(); }
+function prev(){ if(cur.i>0){ cur.i--; renderCard(); } }
+function mark(knew){
+  var idx=cur.order[cur.i];
+  if(!cur.seen[idx]){ cur.seen[idx]=knew?1:2; if(knew) cur.known++; else cur.again.push(idx); }
+  next();
+}
+function finish(){
+  $('bar').style.width='100%';
+  $('cardBox').className='hidden';
+  var total=cur.order.length, again=cur.again.length;
+  $('doneBox').className='done';
+  $('doneBox').innerHTML='<h2>Deck finished</h2><p>You knew <b>'+cur.known+'</b> of '+total+' cards.</p>'+
+    (again?'<button class="btn" onclick="practiseAgain()">Practise the '+again+' card'+(again>1?'s':'')+' marked “Again”</button> ':'')+
+    '<button class="btn ghost" onclick="restart()">Start the whole deck again</button>';
+}
+function practiseAgain(){
+  cur.order=cur.again.slice(); cur.i=0; cur.known=0; cur.seen={}; cur.again=[];
+  $('doneBox').className='done hidden'; $('cardBox').className=''; renderCard();
+}
+function renderList(){
+  $('listBody').innerHTML=cur.cards.map(function(c){
+    return '<tr><td>'+esc(c.front)+'</td><td>'+esc(c.back)+(c.ex?'<br><em>'+esc(c.ex)+'</em>':'')+(c.notes?'<br><small>'+esc(c.notes)+'</small>':'')+'</td></tr>';
+  }).join('');
+}
+document.addEventListener('keydown', function(e){
+  if($('study').className==='hidden' || cur.mode!=='cards') return;
+  var t=e.target.tagName; if(t==='INPUT'||t==='SELECT') return;
+  if(e.keyCode===32||e.keyCode===13){ e.preventDefault(); flip(); }
+  else if(e.keyCode===39) next(); else if(e.keyCode===37) prev();
+});
+(function(){ var sx=null, s=$('scene');
+  s.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; },{passive:true});
+  s.addEventListener('touchend',function(e){ if(sx===null) return; var dx=e.changedTouches[0].clientX-sx; sx=null;
+    if(Math.abs(dx)>60){ e.preventDefault(); if(dx<0) next(); else prev(); } });
+})();
+
+/* ---------- Downloads ---------- */
+function fileName(deck, ext){ return 'Emerald flashcards - '+deck.title.replace(/[\\\/:*?"<>|]/g,'')+'.'+ext; }
+function csvCell(s){ s=String(s||''); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function tsvCell(s){ return String(s||'').replace(/[\t\r\n]+/g,' '); }
+function downloadDeck(deck, kind){
+  closeMenus();
+  loadDeck(deck, function(cards, err){
+    if(!cards){ alert('This deck could not be loaded ('+err+').'); return; }
+    var out, ext, mime='text/plain;charset=utf-8';
+    if(kind==='csv'){
+      out='﻿Front,Back,Example,Notes\r\n'+cards.map(function(c){return [c.front,c.back,c.ex,c.notes].map(csvCell).join(',');}).join('\r\n');
+      ext='csv'; mime='text/csv;charset=utf-8';
+    } else if(kind==='anki'){
+      out='#separator:tab\n#html:true\n#columns:Front\tBack\tTags\n#tags column:3\n'+cards.map(function(c){
+        var back=esc(c.back)+(c.ex?'<br><i>'+esc(c.ex)+'</i>':'')+(c.notes?'<br><small>'+esc(c.notes)+'</small>':'');
+        return tsvCell(esc(c.front))+'\t'+tsvCell(back)+'\t'+deck.title.replace(/\s+/g,'_');
+      }).join('\n');
+      ext='txt';
+    } else {
+      out=cards.map(function(c){ return tsvCell(c.front)+'\t'+tsvCell(c.back+(c.ex?' — e.g. '+c.ex:'')); }).join('\n');
+      ext='txt';
+    }
+    save(out, fileName(deck, kind==='csv'?'csv':(kind==='anki'?'anki.txt':'quizlet.txt')), mime);
+  });
+}
+function save(text, name, mime){
+  var blob=new Blob([text],{type:mime});
+  if(window.navigator.msSaveOrOpenBlob) return window.navigator.msSaveOrOpenBlob(blob,name);
+  var url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+}
+
+/* ---------- Print: 8 cards per A4, fronts then mirrored backs for double-sided printing ---------- */
+function printDeck(deck){
+  closeMenus();
+  loadDeck(deck, function(cards, err){
+    if(!cards){ alert('This deck could not be loaded ('+err+').'); return; }
+    var html='', per=8, p, k, idx, slot, row, col;
+    for(p=0;p<cards.length;p+=per){
+      html+='<div class="psheet">';
+      for(k=0;k<per;k++){
+        idx=p+k;
+        if(idx<cards.length){ var c=cards[idx];
+          html+='<div class="pcard">'+(c.img?'<img src="'+esc(c.img)+'" alt="">':'')+'<div class="pt">'+esc(c.front)+'</div><span class="tag">'+esc(deck.title)+'</span></div>';
+        } else html+='<div class="pcard blank"></div>';
+      }
+      html+='</div><div class="psheet">';
+      for(k=0;k<per;k++){
+        row=Math.floor(k/2); col=k%2; slot=row*2+(1-col); idx=p+slot; /* swap columns so backs line up when flipped on the long edge */
+        if(idx<cards.length){ var b=cards[idx];
+          html+='<div class="pcard"><div class="pb">'+esc(b.back)+'</div>'+(b.ex?'<div class="pe">'+esc(b.ex)+'</div>':'')+(b.notes?'<div class="pn">'+esc(b.notes)+'</div>':'')+'</div>';
+        } else html+='<div class="pcard blank"></div>';
+      }
+      html+='</div>';
+    }
+    $('printArea').innerHTML=html;
+    var old=document.title; document.title=fileName(deck,'pdf').replace(/\.pdf$/,'');
+    setTimeout(function(){ window.print(); document.title=old; }, 300);
+  });
+}
+
+loadContents();
+</script>
+</body>
+</html>
