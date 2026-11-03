@@ -1432,6 +1432,11 @@ function renderPack(p, inSite){
 
 /* ---------- Main page: Flash card packs ---------- */
 var packCat='';
+/* Icon by category (Aviation: twin-engine airliner seen from above) */
+var PLANE_ICON='<svg viewBox="0 0 24 24" style="width:50px;height:50px" fill="none" stroke="#fff" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+
+  '<path d="M12 1c1 0 1.4 1.1 1.4 2.6V9l9.2 4.6v1.7l-9.2-2.4v5.7l2.9 2v1.4L12 21l-4.3 1v-1.4l2.9-2v-5.7l-9.2 2.4v-1.7L10.6 9V3.6C10.6 2.1 11 1 12 1z"/>'+
+  '<rect x="5.6" y="10.4" width="1.8" height="3.2" rx=".9"/><rect x="16.6" y="10.4" width="1.8" height="3.2" rx=".9"/></svg>';
+function catIcon(cat, k){ return /aviat|aircraft|aéro|aero|flight|pilot/i.test(cat||'') ? PLANE_ICON : ICONS[k%ICONS.length]; }
 function showHomePacks(){
   only('home'); document.title='Flash card packs | Emerald Language Learning';
   $('homeDecks').className='hidden'; $('homePacks').className=''; $('htDecks').className=''; $('htPacks').className='on';
@@ -1454,7 +1459,7 @@ function renderHomePacks(){
     packs.forEach(function(p){
       if((p.category||'General')!==c) return;
       var n=p.decks.filter(function(t){ return findDeck(t); }).length;
-      html+='<article class="deck"><div class="circ">'+ICONS[(k++)%ICONS.length]+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+esc(c)+' · '+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
+      html+='<article class="deck"><div class="circ">'+catIcon(c, k++)+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+esc(c)+' · '+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
         '<a class="btn" href="#pack='+encodeURIComponent(p.id)+'">Open</a></div></article>';
     });
   });
