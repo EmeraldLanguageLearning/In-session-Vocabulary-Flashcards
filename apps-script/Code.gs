@@ -1,13 +1,16 @@
 /**
  * Emerald Flashcards – save script
  * Lets the teacher area of the flashcard site save session decks and learner packs
- * into this Google Sheet. Paste this file into Extensions › Apps Script of the sheet,
- * then deploy it as a Web app (Execute as: Me, Who has access: Anyone).
+ * into the flashcards Google Sheet (SHEET_ID below). It works from any Apps Script project.
+ * After pasting: choose "setup" next to Run and click Run once to authorise,
+ * then deploy as a Web app (Execute as: Me, Who has access: Anyone).
  *
  * The site sends the trainer PIN with every request; it is checked here again,
  * and 8 wrong PINs block saving for 4 hours.
  */
 
+// The flashcards sheet: "Emerald Flashcards – Contents"
+var SHEET_ID = '1KTx7_WW-YiZON8G3uuHCsYfM1cpfjtoRaV1mL3LaNa4';
 var PIN_HASH = 2085847969;           // same trainer PIN as the Emerald-web trainer page
 var CONTENTS = 'Contents';
 var PACKS = 'Packs';
@@ -15,6 +18,14 @@ var DECK_HEADER = ['Front', 'Back', 'Example', 'Notes'];
 var PACK_HEADER = ['Pack ID', 'Pack title', 'Learner', 'Message', 'Decks', 'Created', 'Updated'];
 
 function h(s) { var x = 5381; for (var k = 0; k < s.length; k++) { x = ((x * 33) ^ s.charCodeAt(k)) >>> 0; } return x; }
+
+function book() { return SpreadsheetApp.openById(SHEET_ID); }
+
+/** Run this once from the editor: it asks for permission and checks the sheet is reachable. */
+function setup() {
+  var ss = book();
+  Logger.log('Connected to "' + ss.getName() + '". Contents tab found: ' + !!ss.getSheetByName(CONTENTS));
+}
 
 function doGet() { return out({ ok: true, service: 'Emerald Flashcards save script' }); }
 
@@ -30,7 +41,7 @@ function doPost(e) {
       return out({ ok: false, error: 'Wrong PIN.' });
     }
     lock.waitLock(20000);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = book();
     if (req.action === 'ping') return out({ ok: true });
     if (req.action === 'saveDeck') return out(saveDeck(ss, req));
     if (req.action === 'savePack') return out(savePack(ss, req));
