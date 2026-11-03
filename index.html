@@ -19,13 +19,6 @@ var CONTENTS_TAB = "Contents";
 var PACKS_TAB = "Packs";
 /* Web app URL of the save script (apps-script/Code.gs). Teachers can also paste it in Teachers › Setup. */
 var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTpp_kTjPR02pcsL98GFcERNZUj117r9DABhABPrZA9uJQr4X97seuGAR7csIArkYl/exec";
-/* Inside the Emerald Tools Android app, window.EmeraldAndroid saves files, prints and shares for the page. */
-var APP = window.EmeraldAndroid || null;
-function b64utf8(t){ return btoa(unescape(encodeURIComponent(t))); }
-function savePdfDoc(doc, name){
-  if(APP && APP.saveFile){ var d=doc.output('datauristring'); APP.saveFile(name, 'application/pdf', d.slice(d.indexOf(',')+1)); }
-  else doc.save(name);
-}
 </script>
 <style>
 :root{
@@ -195,6 +188,20 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .packhead .who{font-family:var(--font-head);color:var(--emerald-soft);text-transform:uppercase;letter-spacing:.06em;font-size:.85rem}
 .packmsg{background:var(--bg-soft);border-left:3px solid var(--emerald);padding:12px 16px;border-radius:4px;max-width:640px;margin:16px auto;white-space:pre-line;text-align:left}
 
+/* Dictionary + pronunciation */
+.mwrap{display:flex;gap:4px;align-items:stretch}
+.mwrap input{flex:1;min-width:0}
+.look{margin-top:4px;border:1px solid var(--emerald);background:#fff;color:var(--emerald-dark);border-radius:4px;width:36px;flex:0 0 36px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.look:hover{background:var(--bg-soft)}
+.lkdef{display:block;width:100%;text-align:left;background:var(--bg-soft);border:1px solid var(--line);border-radius:4px;padding:9px 12px;margin:6px 0;cursor:pointer;color:var(--text-strong);font-size:.92rem;line-height:1.5}
+.lkdef:hover{border-color:var(--emerald);background:#EEF7F3}
+.lkdef small{display:block;color:var(--emerald-soft);font-weight:600;text-transform:uppercase;font-size:.7rem;letter-spacing:.05em}
+.lkdef em{display:block;color:var(--text);margin-top:2px}
+.say{position:absolute;top:10px;right:12px;width:42px;height:42px;border-radius:50%;border:1px solid var(--emerald);background:#fff;color:var(--emerald-dark);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:2}
+.say:hover,.say:active{background:#EEF7F3}
+.say.inline{position:static;display:inline-flex;width:30px;height:30px;vertical-align:middle;margin-right:8px}
+.say.inline svg{width:16px;height:16px}
+
 /* Print */
 #printArea{display:none}
 @media print{
@@ -259,7 +266,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
             <div class="face back"><span class="lbl" id="lblBack">Back</span><div id="backBody"></div></div>
           </div>
         </div>
-        <p class="hint">Tap the card to turn it over. Keyboard: space to flip, ← → to move.</p>
+        <p class="hint">Tap the card to turn it over, and the speaker to hear the word. Keyboard: space to flip, ← → to move.</p>
         <div class="controls">
           <button class="btn ghost" onclick="prev()">← Previous</button>
           <button class="btn again" onclick="mark(false)">Again</button>
@@ -391,6 +398,21 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
     <div class="grid" id="pkGrid"></div>
   </section>
 </main>
+
+<!-- DICTIONARY LOOKUP (teacher editor) -->
+<div id="lookOverlay" class="overlay hidden" onclick="if(event.target===this)closeLookup()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lkTitle">
+    <button class="x" onclick="closeLookup()" aria-label="Close">×</button>
+    <h3 id="lkTitle"></h3>
+    <p id="lkPh" style="margin:0;color:var(--emerald-dark)"></p>
+    <p style="font-size:.85rem;margin:8px 0 4px">Tap a meaning to use it. You can edit it afterwards.</p>
+    <div id="lkBody"></div>
+    <div class="row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+      <a id="lkCam" class="btn ghost" href="#" target="_blank" rel="noopener">Check on Cambridge Dictionary ↗</a>
+    </div>
+    <p style="font-size:.75rem;margin:10px 0 0">Suggestions from Wiktionary (CC BY-SA) via the Free Dictionary API.</p>
+  </div>
+</div>
 
 <!-- SHARE MODAL -->
 <div id="shareOverlay" class="overlay hidden" onclick="if(event.target===this)closeShare()">
@@ -642,6 +664,7 @@ function faceHTML(c, side){
   if(side==='front'){
     if(c.img) h+='<img src="'+esc(c.img)+'" alt="">';
     h+='<div class="main">'+esc(c.front)+'</div>';
+    if(c.front) h+=sayHTML(c.front);
   } else {
     h+='<div class="main">'+esc(c.back)+'</div>';
     if(showEx && c.ex) h+='<div class="ex">'+esc(c.ex)+'</div>';
@@ -652,6 +675,7 @@ function faceHTML(c, side){
 function renderCard(){
   if(!cur.cards.length) return;
   var c=cur.cards[cur.order[cur.i]], rev=$('optReverse').checked;
+  prefetchPron(c.front); if(cur.i+1<cur.order.length) prefetchPron(cur.cards[cur.order[cur.i+1]].front);
   cur.flipped=false; $('card').className='card';
   setTimeout(function(){
     $('frontBody').innerHTML=faceHTML(c, rev?'back':'front');
@@ -684,7 +708,8 @@ function practiseAgain(){
 }
 function renderList(){
   $('listBody').innerHTML=cur.cards.map(function(c){
-    return '<tr><td>'+esc(c.front)+'</td><td>'+esc(c.back)+(c.ex?'<br><em>'+esc(c.ex)+'</em>':'')+(c.notes?'<br><small>'+esc(c.notes)+'</small>':'')+'</td></tr>';
+    if(cur.cards.length<=40) prefetchPron(c.front);
+    return '<tr><td>'+(c.front?sayHTML(c.front,'inline'):'')+esc(c.front)+'</td><td>'+esc(c.back)+(c.ex?'<br><em>'+esc(c.ex)+'</em>':'')+(c.notes?'<br><small>'+esc(c.notes)+'</small>':'')+'</td></tr>';
   }).join('');
 }
 document.addEventListener('keydown', function(e){
@@ -725,7 +750,6 @@ function downloadDeck(deck, kind){
   });
 }
 function save(text, name, mime){
-  if(APP && APP.saveFile){ APP.saveFile(name, mime, b64utf8(text)); return; }
   var blob=new Blob([text],{type:mime});
   if(window.navigator.msSaveOrOpenBlob) return window.navigator.msSaveOrOpenBlob(blob,name);
   var url=URL.createObjectURL(blob), a=document.createElement('a');
@@ -758,7 +782,7 @@ function printDeck(deck){
     }
     $('printArea').innerHTML=html;
     var old=document.title; document.title=fileName(deck,'pdf').replace(/\.pdf$/,'');
-    setTimeout(function(){ if(APP && APP.print) APP.print(document.title); else window.print(); document.title=old; }, 300);
+    setTimeout(function(){ window.print(); document.title=old; }, 300);
   });
 }
 
@@ -786,7 +810,7 @@ function showLearner(tab){
       $('lStatus').className='state'; $('lStatus').style.padding='4px';
       $('lStatus').innerHTML=cards.length+' words · ready to download';
       $('lBtn').className='btn'; $('lStudy').className='alt';
-      if(!APP && !/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)){ try{ savePdf(); }catch(x){} }
+      if(!/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)){ try{ savePdf(); }catch(x){} }
     });
   });
 }
@@ -794,7 +818,7 @@ function showLearnerError(msg){
   only('learner');
   $('lStatus').className='err'; $('lStatus').innerHTML=esc(msg);
 }
-function savePdf(){ if(pdfDoc) savePdfDoc(pdfDoc, pdfName); }
+function savePdf(){ if(pdfDoc) pdfDoc.save(pdfName); }
 
 /* Loaders */
 function loadScriptFrom(urls, i, ok, fail){
@@ -924,7 +948,7 @@ function pdfCards(doc, deck, cards, a){
 var shareDeck=null, sharePack=null;
 function openShare(deck){ closeMenus(); shareDeck=deck; sharePack=null; $('shTitle').textContent='Share with a learner'; $('shDeck').textContent=deck.title; $('shOpts').style.display=''; openShareBox(); }
 function openSharePack(pk){ sharePack=pk; shareDeck=null; $('shTitle').textContent='Share this pack'; $('shDeck').textContent=pk.title+(pk.learner?' · for '+pk.learner:''); $('shOpts').style.display='none'; openShareBox(); }
-function openShareBox(){ $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=(navigator.share||(APP&&APP.share))?'btn ghost':'btn ghost hidden'; updateShare(); }
+function openShareBox(){ $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=navigator.share?'btn ghost':'btn ghost hidden'; updateShare(); }
 function closeShare(){ $('shareOverlay').className='overlay hidden'; }
 function shareLayout(){ var r=document.getElementsByName('shLayout'); for(var i=0;i<r.length;i++) if(r[i].checked) return r[i].value; return 'list'; }
 function siteBase(){ return location.protocol+'//'+location.host+location.pathname; }
@@ -952,8 +976,90 @@ function copyShare(){
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(u).then(done, legacy); } else legacy();
   function legacy(){ var f=$('shLink'); f.focus(); f.select(); try{ f.setSelectionRange(0,9999); }catch(e){} try{ if(document.execCommand('copy')) done(); else $('shOk').textContent='Select the link above and copy it.'; }catch(e){ $('shOk').textContent='Select the link above and copy it.'; } }
 }
-function nativeShare(){ if(APP && APP.share){ APP.share('Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), shareText()+'\n'+shareUrl()); return; } try{ navigator.share({title:'Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), text:shareText(), url:shareUrl()}); }catch(e){} }
+function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), text:shareText(), url:shareUrl()}); }catch(e){} }
 document.addEventListener('keydown', function(e){ if(e.keyCode===27) closeShare(); });
+
+/* ---------- Dictionary help (teacher editor) and pronunciation (learners) ----------
+   Suggestions and recordings: Free Dictionary API (dictionaryapi.dev), data from Wiktionary (CC BY-SA).
+   Cambridge Dictionary is only linked to, never copied (its content needs a licence). */
+var dictCache={}, pronCache={}, lookDefs=[], lookRow=null;
+var SPEAKER='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+function dictWord(w){ return String(w||'').replace(/[“”"!?.,;]/g,'').replace(/^\s*to\s+/i,'').replace(/\s+/g,' ').trim().toLowerCase(); }
+function dictLookup(word, cb){
+  var w=dictWord(word); if(!w) return cb(null);
+  if(dictCache[w]!==undefined) return cb(dictCache[w]);
+  var x=new XMLHttpRequest(); x.open('GET','https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w),true); x.timeout=12000;
+  x.onload=function(){ var d=null; if(x.status===200){ try{ d=JSON.parse(x.responseText); }catch(e){} } dictCache[w]=d; cb(d); };
+  x.onerror=function(){ cb(null,'network'); }; x.ontimeout=function(){ cb(null,'network'); };
+  x.send();
+}
+function cambridgeUrl(word){ return 'https://dictionary.cambridge.org/search/direct/?datasetsearch=english&q='+encodeURIComponent(dictWord(word)); }
+
+/* Teacher: suggest meanings */
+function openLookup(btn){
+  var tr=btn; while(tr && tr.tagName!=='TR') tr=tr.parentNode;
+  var w=tr.querySelector('.eF').value.trim();
+  if(!w){ tr.querySelector('.eF').focus(); return; }
+  lookRow=tr; lookDefs=[];
+  $('lkTitle').textContent=w; $('lkPh').textContent=''; $('lkCam').href=cambridgeUrl(w);
+  $('lkBody').innerHTML='<div class="state" style="padding:16px"><div class="spinner"></div>Looking up “'+esc(w)+'”…</div>';
+  $('lookOverlay').className='overlay';
+  dictLookup(w, function(d, err){
+    if(!d){ $('lkBody').innerHTML='<p>'+(err?'The dictionary could not be reached. Check your connection.':'No entry found for “'+esc(dictWord(w))+'” in the free dictionary. Phrases and technical terms are often missing: check Cambridge below and write the meaning yourself.')+'</p>'; return; }
+    var html='', ph='';
+    d.forEach(function(e){
+      if(!ph) ph=e.phonetic||((e.phonetics||[]).filter(function(p){return p.text;})[0]||{}).text||'';
+      (e.meanings||[]).forEach(function(m){
+        (m.definitions||[]).forEach(function(df){
+          if(lookDefs.length>=10) return;
+          lookDefs.push({def:df.definition, ex:df.example||''});
+          html+='<button class="lkdef" onclick="pickDef('+(lookDefs.length-1)+')"><small>'+esc(m.partOfSpeech||'')+'</small>'+esc(df.definition)+(df.example?'<em>'+esc(df.example)+'</em>':'')+'</button>';
+        });
+      });
+    });
+    $('lkPh').textContent=ph;
+    $('lkBody').innerHTML=html||'<p>No definitions found.</p>';
+  });
+}
+function pickDef(i){
+  var d=lookDefs[i]; if(!d||!lookRow) return;
+  lookRow.querySelector('.eB').value=d.def;
+  var ex=lookRow.querySelector('.eE'); if(d.ex && !ex.value.trim()) ex.value=d.ex.charAt(0).toUpperCase()+d.ex.slice(1);
+  closeLookup(); lookRow.querySelector('.eB').focus();
+}
+function closeLookup(){ $('lookOverlay').className='overlay hidden'; }
+
+/* Learners: pronunciation */
+function pickAudio(d){
+  var uk='', us='', any='';
+  (d||[]).forEach(function(e){ (e.phonetics||[]).forEach(function(p){
+    if(!p.audio) return; var a=p.audio.indexOf('//')===0?'https:'+p.audio:p.audio;
+    if(/-uk\.mp3|_gb_/i.test(a)) uk=uk||a; else if(/-us\.mp3|_us_/i.test(a)) us=us||a; else any=any||a;
+  }); });
+  return uk||any||us;
+}
+function prefetchPron(word){
+  var w=dictWord(word); if(!w || pronCache[w]!==undefined) return;
+  if(w.split(' ').length>3){ pronCache[w]=''; return; }  // long phrases: device voice
+  pronCache[w]=null;
+  dictLookup(word, function(d, err){ pronCache[w]= err ? undefined : (pickAudio(d)||''); });
+}
+var gbVoice=null;
+function findVoice(){ if(!window.speechSynthesis) return null; var vs=speechSynthesis.getVoices()||[], best=null; for(var i=0;i<vs.length;i++){ var l=(vs[i].lang||'').replace('_','-'); if(l==='en-GB'){ return vs[i]; } if(!best && l.indexOf('en')===0) best=vs[i]; } return best; }
+if(window.speechSynthesis){ gbVoice=findVoice(); try{ speechSynthesis.onvoiceschanged=function(){ gbVoice=findVoice(); }; }catch(e){} }
+function tts(text){
+  if(!window.speechSynthesis) return;
+  try{ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(text).replace(/^\s*to\s+(?=\S+\s)/i,'')); u.lang='en-GB'; if(gbVoice) u.voice=gbVoice; u.rate=0.9; speechSynthesis.speak(u); }catch(e){}
+}
+function sayBtn(el, ev){
+  if(ev){ ev.stopPropagation(); }
+  var word=el.getAttribute('data-say'), url=pronCache[dictWord(word)];
+  if(url){
+    var a=new Audio(url), fell=false; function fb(){ if(!fell){ fell=true; tts(word); } }
+    a.onerror=fb; try{ var p=a.play(); if(p && p.catch) p.catch(fb); }catch(e){ fb(); }
+  } else tts(word);
+}
+function sayHTML(word, cls){ return '<button class="say'+(cls?' '+cls:'')+'" data-say="'+esc(word)+'" onclick="sayBtn(this,event)" ontouchend="event.stopPropagation()" aria-label="Listen to the pronunciation" title="Listen">'+SPEAKER+'</button>'; }
 
 /* ---------- Teacher area (PIN) ---------- */
 /* Same trainer PIN as Emerald-web. Only keeps learners out of the menu; the save script checks the PIN again. */
@@ -961,6 +1067,7 @@ var PIN_HASH = 2085847969;
 function pinHash(s){ var x=5381; for(var k=0;k<s.length;k++){ x=((x*33)^s.charCodeAt(k))>>>0; } return x; }
 function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return window['__'+k]||null; } }
 function ssSet(k,v){ try{ if(v==null) sessionStorage.removeItem(k); else sessionStorage.setItem(k,v); }catch(e){} window['__'+k]=v; }
+var LOOK_ICON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>';
 var pinEntry='', tReady=false, editingTab='', editingPack='', packsCache=null;
 
 function showTeacher(){
@@ -1025,7 +1132,7 @@ function fillFromSelect(){
 }
 function rowHTML(c){
   c=c||{};
-  return '<tr><td><input class="eF" value="'+esc(c.front)+'" aria-label="Word"></td><td><input class="eB" value="'+esc(c.back)+'" aria-label="Meaning"></td>'+
+  return '<tr><td><input class="eF" value="'+esc(c.front)+'" aria-label="Word"></td><td><div class="mwrap"><input class="eB" value="'+esc(c.back)+'" aria-label="Meaning"><button class="look" onclick="openLookup(this)" title="Suggest meanings" aria-label="Suggest meanings">'+LOOK_ICON+'</button></div></td>'+
     '<td><input class="eE" value="'+esc(c.ex)+'" aria-label="Example"></td><td><input class="eN" value="'+esc(c.notes)+'" aria-label="Notes"></td>'+
     '<td><button class="del" title="Remove" aria-label="Remove this word" onclick="var r=this.parentNode.parentNode;r.parentNode.removeChild(r)">×</button></td></tr>';
 }
@@ -1201,7 +1308,7 @@ function packPdf(){
         $('pkAll').disabled=false;
         if(!doc){ $('pkAllMsg').className='msg bad'; $('pkAllMsg').textContent='The PDF could not be prepared ('+e+').'; return; }
         $('pkAllMsg').textContent='';
-        savePdfDoc(doc, curPack.title.replace(/[\\\/:*?"<>|]/g,'')+'.pdf');
+        doc.save(curPack.title.replace(/[\\\/:*?"<>|]/g,'')+'.pdf');
       });
     });
   });
@@ -1214,10 +1321,6 @@ if(learnerMode()){
   else if(learnerTab()) only('learner');
   else only('packView');
 } else if(location.hash==='#teacher') only('teacher');
-if(APP){ /* way back to the other Emerald tools */
-  var toolsLink=document.createElement('a'); toolsLink.textContent='\u2190 Tools'; toolsLink.href='https://appassets.androidplatform.net/assets/index.html';
-  $('topNav').insertBefore(toolsLink, $('topNav').firstChild);
-}
 loadContents();
 </script>
 </body>

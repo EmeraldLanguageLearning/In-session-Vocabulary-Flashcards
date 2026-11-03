@@ -50,6 +50,11 @@ The PIN on the page only keeps learners out of the menu. The save script checks 
 
 If you change `Code.gs` later: **Deploy › Manage deployments › Edit › Version: New version** (the URL stays the same).
 
+## Dictionary help and pronunciation
+
+- **Deck editor:** the magnifier button on a meaning field suggests definitions (with examples) from the Free Dictionary API, which uses Wiktionary (CC BY-SA). Tap one to fill the meaning (and the example, if empty). The panel also links to the word on Cambridge Dictionary for checking; Cambridge content is not copied (it needs a licence from Cambridge).
+- **Learner cards and word list:** the speaker button plays a recorded pronunciation from the same source when one exists (British first), otherwise the device's English voice reads the word or phrase.
+
 ## Printing
 
 "Print" makes A4 pages with 8 cards: a page of fronts followed by a page of backs. Print double-sided (flip on long edge) and cut along the dashed lines. In the print dialog choose "Save as PDF" to get a PDF.
