@@ -29,6 +29,26 @@ On a deck, choose **Download ▾ › Share PDF link** (or **Share PDF link** und
 - Works for decks set to `Show: No`, so you can keep per-group session vocabulary off the home page and still send it.
 - The PDF library (jsPDF 2.5.1) loads from a public CDN (cdnjs, with jsDelivr and unpkg as fallbacks); the fonts in `fonts/` are a subset of DejaVu Sans so phonetic symbols print correctly.
 
+## Teacher area (PIN)
+
+**Teachers** in the menu opens a PIN pad (same trainer PIN as the Emerald-web trainer page). Inside:
+
+- **Session deck:** type words, or paste a list (`word - meaning | example`, or columns copied from Excel/Sheets), or start from an existing deck. Save creates a new tab in the sheet and a row in Contents (hidden from the home page unless ticked), then opens the share panel.
+- **Learner pack:** a learner's name, an optional message and a choice of decks. Saved in the `Packs` tab. The learner gets `…/?pack=<id>`: their decks to study online or download as PDFs (one deck, or everything in one PDF). Editing a pack keeps the same link.
+- **Saved packs:** list of packs with Share and Edit.
+
+The PIN on the page only keeps learners out of the menu. The save script checks the PIN again and blocks saving for 10 minutes after 8 wrong PINs.
+
+### One-time setup of the save script
+
+1. Open the Google Sheet › **Extensions › Apps Script**.
+2. Delete the sample code, paste the contents of [`apps-script/Code.gs`](apps-script/Code.gs), click **Save**.
+3. **Deploy › New deployment** › type **Web app**. *Execute as:* **Me**. *Who has access:* **Anyone**. Click **Deploy**, then **Authorize access** and allow it (Google shows an "unverified app" warning for your own scripts: **Advanced › Go to … (unsafe)**).
+4. Copy the **Web app URL** (ends in `/exec`).
+5. On the site: **Teachers › Setup**, paste the URL, **Save and test**. To connect every device at once, put the URL in `SCRIPT_URL` near the top of `index.html`.
+
+If you change `Code.gs` later: **Deploy › Manage deployments › Edit › Version: New version** (the URL stays the same).
+
 ## Printing
 
 "Print" makes A4 pages with 8 cards: a page of fronts followed by a page of backs. Print double-sided (flip on long edge) and cut along the dashed lines. In the print dialog choose "Save as PDF" to get a PDF.

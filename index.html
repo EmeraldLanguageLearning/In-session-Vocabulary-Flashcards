@@ -16,6 +16,9 @@
 /* ===== SETTINGS: the only thing to change if you use another Google Sheet ===== */
 var SHEET_ID = "1KTx7_WW-YiZON8G3uuHCsYfM1cpfjtoRaV1mL3LaNa4";
 var CONTENTS_TAB = "Contents";
+var PACKS_TAB = "Packs";
+/* Web app URL of the save script (apps-script/Code.gs). Teachers can also paste it in Teachers › Setup. */
+var SCRIPT_URL = "";
 </script>
 <style>
 :root{
@@ -137,6 +140,54 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .modal .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .modal .ok{color:var(--emerald-dark);font-size:.88rem;min-height:1.4em;margin-top:8px}
 
+/* Teacher area */
+.pin{max-width:330px;margin:10px auto 0;text-align:center}
+.dots{margin:16px 0 18px}
+.dots span{display:inline-block;width:18px;height:18px;border-radius:50%;border:2px solid var(--emerald);margin:0 9px}
+.dots span.on{background:var(--emerald)}
+.dots.shake{-webkit-animation:shake .4s;animation:shake .4s}
+@-webkit-keyframes shake{0%,100%{-webkit-transform:translateX(0)}25%,75%{-webkit-transform:translateX(-10px)}50%{-webkit-transform:translateX(10px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-10px)}50%{transform:translateX(10px)}}
+.keys{overflow:hidden}
+.keys button{float:left;width:29.33%;margin:2%;height:66px;border-radius:4px;border:1px solid var(--line);background:var(--bg-soft);font-family:var(--font-head);font-size:24px;color:var(--text-strong);cursor:pointer;-webkit-appearance:none;padding:0}
+.keys button:active{background:#E3F3EC;border-color:var(--emerald)}
+.keys button.fn{font-family:var(--font-body);font-size:15px;color:var(--text);background:#fff}
+.perr{color:#C0573E;min-height:24px}
+.form{display:flex;flex-wrap:wrap;gap:14px 18px;margin-bottom:18px}
+.form label{display:flex;flex-direction:column;font-weight:600;color:var(--text-strong);font-size:.88rem;flex:1 1 220px}
+.form label.wide{flex-basis:100%}
+.form label.chk{flex-direction:row;align-items:center;gap:8px;font-weight:400;color:var(--text)}
+.form label.chk input{width:auto;margin:0;accent-color:var(--emerald)}
+.form label.chk{flex-basis:100%}
+.form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl{border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-weight:400;color:var(--text-strong);background:#fff;margin-top:4px;width:100%}
+.form textarea{min-height:64px;resize:vertical}
+.form input:focus,.form select:focus,.form textarea:focus,.ed input:focus{outline:2px solid var(--emerald-soft);border-color:var(--emerald)}
+.ed{width:100%;border-collapse:collapse}
+.ed th{text-align:left;font-family:var(--font-head);font-size:.82rem;color:var(--text-strong);border-bottom:2px solid var(--emerald);padding:6px 4px}
+.ed td{padding:4px;vertical-align:top}
+.ed td:last-child{width:34px}
+.ed .del{background:none;border:0;color:var(--line-strong);font-size:1.3rem;cursor:pointer;padding:6px}
+.ed .del:hover{color:#C0573E}
+@media (max-width:700px){.ed thead{display:none}.ed tr{display:block;border-bottom:1px solid var(--line);padding:6px 0}.ed td{display:block}.ed td:last-child{width:auto;text-align:right}}
+#pasteText{min-height:120px;font-family:inherit}
+.savebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.msg{font-size:.9rem;color:var(--emerald-dark)}
+.msg.bad{color:#C0573E}
+.checks{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:6px 12px;margin-top:8px}
+.checks label{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--bg-soft);cursor:pointer}
+.checks label small{display:block;color:var(--text)}
+.checks input{margin-top:5px;accent-color:var(--emerald)}
+.plist{width:100%;border-collapse:collapse;font-size:.92rem}
+.plist th{text-align:left;font-family:var(--font-head);color:var(--text-strong);border-bottom:2px solid var(--emerald);padding:8px}
+.plist td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+.plist td:last-child{white-space:nowrap}
+.setup ol{line-height:2}
+.setup code{background:var(--bg-soft);padding:2px 6px;border-radius:3px;font-size:.88em}
+/* Learner pack page */
+.packhead{text-align:center;margin:30px auto 10px;max-width:640px}
+.packhead .who{font-family:var(--font-head);color:var(--emerald-soft);text-transform:uppercase;letter-spacing:.06em;font-size:.85rem}
+.packmsg{background:var(--bg-soft);border-left:3px solid var(--emerald);padding:12px 16px;border-radius:4px;max-width:640px;margin:16px auto;white-space:pre-line;text-align:left}
+
 /* Print */
 #printArea{display:none}
 @media print{
@@ -161,7 +212,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 <body>
 <header class="top">
   <a href="#" onclick="goHome();return false;" aria-label="All decks"><img src="logo.png" width="306" height="90" alt="Emerald Language Learning"></a>
-  <nav id="topNav"><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a></nav>
+  <nav id="topNav"><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a><a id="navTeacher" onclick="location.hash='teacher'">Teachers</a></nav>
 </header>
 
 <main class="wrap">
@@ -239,7 +290,98 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
       <div id="lStatus" class="state" style="padding:10px"><div class="spinner"></div>Preparing your PDF…</div>
       <button id="lBtn" class="btn hidden" onclick="savePdf()">Download the PDF</button>
       <a id="lStudy" class="alt hidden" href="#">Study these words online instead</a>
+      <a id="lBack" class="alt hidden" href="#">← Back to my vocabulary</a>
     </div>
+  </section>
+
+  <!-- TEACHER AREA (PIN) -->
+  <section id="teacher" class="hidden">
+    <div id="tLocked">
+      <h1 class="sec">Teachers</h1>
+      <p class="lead">Enter the trainer PIN to create session decks and learner packs.</p>
+      <div class="pin">
+        <div class="dots" id="dots"><span></span><span></span><span></span><span></span></div>
+        <div class="perr" id="perr"></div>
+        <div class="keys" id="keys"></div>
+      </div>
+    </div>
+    <div id="tOpen" class="hidden">
+      <div class="study-head"><h1>Teacher area</h1><button class="btn ghost small" onclick="lockTeacher()">Lock</button></div>
+      <div class="tabs" role="tablist">
+        <button id="ttDeck" class="on" onclick="tTab('Deck')">Session deck</button>
+        <button id="ttPack" onclick="tTab('Pack')">Learner pack</button>
+        <button id="ttList" onclick="tTab('List')">Saved packs</button>
+        <button id="ttSetup" onclick="tTab('Setup')">Setup</button>
+      </div>
+      <div id="tWarn" class="err hidden" style="max-width:none;margin:0 0 20px">Saving is not connected yet. <a href="#teacher" onclick="tTab('Setup');return false;">Open Setup</a> to connect the Google Sheet.</div>
+
+      <div id="tpDeck">
+        <div class="form">
+          <label>Start from
+            <select id="dFrom" onchange="startFrom()"><option value="">A blank deck</option></select>
+          </label>
+          <label id="dModeBox" class="hidden">When saving
+            <select id="dMode"><option value="new">Save as a new deck</option><option value="update">Update the original deck</option></select>
+          </label>
+          <label class="wide">Deck title <input id="dTitle" maxlength="90"></label>
+          <label>Learner or group <input id="dWho" placeholder="e.g. Thalès group 2"></label>
+          <label>Level <input id="dLevel" placeholder="e.g. B1"></label>
+          <label class="wide">Description <input id="dDesc" placeholder="e.g. Words from our session on hydraulics"></label>
+          <label class="chk"><input type="checkbox" id="dShow"> Also show this deck on the home page</label>
+        </div>
+        <table class="ed"><thead><tr><th>Word</th><th>Meaning</th><th>Example (optional)</th><th>Notes (optional)</th><th></th></tr></thead><tbody id="edBody"></tbody></table>
+        <div class="row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+          <button class="btn ghost small" onclick="addRow();focusLast()">+ Add a word</button>
+          <button class="btn ghost small" onclick="togglePaste()">Paste a list</button>
+          <button class="btn ghost small" onclick="clearDeckForm()">Clear</button>
+        </div>
+        <div id="pasteBox" class="hidden" style="margin-top:12px">
+          <p style="margin:0 0 6px;font-size:.88rem">One word per line: <code>word - meaning | example</code>. Lines copied from Excel or Google Sheets (word, meaning, example in columns) work too.</p>
+          <textarea id="pasteText"></textarea>
+          <button class="btn small" style="margin-top:8px" onclick="importPaste()">Add these words</button>
+        </div>
+        <div class="savebar"><span id="dMsg" class="msg"></span><button class="btn" id="dSave" onclick="saveDeckUI()">Save and share</button></div>
+      </div>
+
+      <div id="tpPack" class="hidden">
+        <div class="form">
+          <label>Learner's name <input id="pWho" placeholder="e.g. Marie Dupont" oninput="packTitleHint()"></label>
+          <label>Pack title <input id="pTitle" placeholder="Your vocabulary"></label>
+          <label class="wide">Message to the learner (optional) <textarea id="pMsg" placeholder="e.g. Review these before Thursday's session."></textarea></label>
+        </div>
+        <label style="font-weight:600;color:var(--text-strong)">Decks in this pack <span id="pCount" style="font-weight:400"></span></label>
+        <input id="pSearch" type="search" placeholder="Filter decks" oninput="renderPackChecks()">
+        <div class="checks" id="pDecks"></div>
+        <div class="savebar"><span id="pMsgOut" class="msg"></span><button class="btn ghost" id="pNew" onclick="clearPackForm()">New pack</button><button class="btn" id="pSave" onclick="savePackUI()">Save and share</button></div>
+      </div>
+
+      <div id="tpList" class="hidden">
+        <p>Packs saved in the Google Sheet (tab “Packs”). Edit one to add or remove decks: the learner's link stays the same.</p>
+        <div id="listState" class="state hidden"></div>
+        <table class="plist"><thead><tr><th>Learner</th><th>Pack</th><th>Decks</th><th>Updated</th><th></th></tr></thead><tbody id="plBody"></tbody></table>
+      </div>
+
+      <div id="tpSetup" class="hidden setup">
+        <p>Saving uses a small script attached to the Google Sheet. It only needs to be set up once.</p>
+        <div class="form">
+          <label class="wide">Web app URL of the save script <input id="sUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="saveSetup()">Save and test</button><span id="sMsg" class="msg" style="align-self:center"></span></div>
+        <p style="font-size:.88rem;margin-top:16px">The URL is kept on this device. Ask for it to be added to the site so every teacher's device is connected. Setup steps are in the repository's README (“Teacher area”).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEARNER PACK PAGE (?pack=ID) -->
+  <section id="packView" class="hidden">
+    <div class="packhead">
+      <div class="who" id="pkWho"></div>
+      <h1 class="sec" id="pkTitle" style="margin-top:6px">Your vocabulary</h1>
+    </div>
+    <div class="packmsg hidden" id="pkMsg"></div>
+    <div id="pkState" class="state"><div class="spinner"></div>Loading your decks…</div>
+    <div style="text-align:center;margin:10px 0 0" id="pkAllBox" class="hidden"><button class="btn" id="pkAll" onclick="packPdf()">Download everything as one PDF</button> <span id="pkAllMsg" class="msg"></span></div>
+    <div class="grid" id="pkGrid"></div>
   </section>
 </main>
 
@@ -249,7 +391,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
     <button class="x" onclick="closeShare()" aria-label="Close">×</button>
     <h3 id="shTitle">Share with a learner</h3>
     <p id="shDeck" style="margin:0"></p>
-    <fieldset>
+    <fieldset id="shOpts">
       <legend>The learner gets</legend>
       <label><input type="radio" name="shLayout" value="study" checked onchange="updateShare()"> The deck online, to study as flashcards</label>
       <label><input type="radio" name="shLayout" value="list" onchange="updateShare()"> A PDF word list (word, meaning, example)</label>
@@ -327,8 +469,8 @@ function toObjects(text){
 }
 function pick(o, names){ for(var i=0;i<names.length;i++){ if(o[names[i]]) return o[names[i]]; } return ''; }
 
-function loadContents(){
-  $('homeState').className='state'; $('homeState').innerHTML='<div class="spinner"></div>Loading decks…';
+function loadContents(quiet){
+  if(!quiet){ $('homeState').className='state'; $('homeState').innerHTML='<div class="spinner"></div>Loading decks…'; }
   get(tabUrl(CONTENTS_TAB), function(t){
     var rows=toObjects(t);
     allDecks=[];
@@ -339,11 +481,13 @@ function loadContents(){
     });
     decks=allDecks.filter(function(d){return !d.hidden;});
     lsSet('ell-fc-contents',{at:Date.now(),decks:allDecks});
+    if(quiet) return quiet();
     afterContents(false);
   }, function(err){
     var c=lsGet('ell-fc-contents');
+    if(quiet) return quiet(err);
     if(c && c.decks){ allDecks=c.decks; decks=allDecks.filter(function(d){return !d.hidden;}); afterContents(c.at); }
-    else if(learnerTab()){ showLearnerError('The vocabulary list could not be loaded. Check your internet connection and open the link again.'); }
+    else if(learnerMode()){ showLearnerError('The vocabulary list could not be loaded. Check your internet connection and open the link again.'); }
     else showHomeError(err);
   });
 }
@@ -357,6 +501,7 @@ function afterContents(offlineAt){
   fillFilter('fLvl', decks.map(function(d){return d.level;}), 'All levels');
   $('updated').innerHTML = offlineAt ? 'Offline: showing the decks saved on '+new Date(offlineAt).toLocaleString()+'.' : 'Updated from the Google Sheet just now.';
   renderDecks();
+  contentsReady=true;
   route();
 }
 function fillFilter(id, vals, label){
@@ -411,22 +556,33 @@ function toggleMenu(e, n){
 function closeMenus(){ var ms=document.querySelectorAll('.dl-menu'); for(var i=0;i<ms.length;i++) ms[i].className='dl-menu hidden'; }
 document.addEventListener('click', closeMenus);
 
-/* ---------- Routing (#deck=Tab name links straight to a deck) ---------- */
+/* ---------- Routing ----------
+   #deck=<tab>      a deck inside the site        #teacher   teacher area (PIN)
+   ?study=<tab>     a deck on its own (learner)    ?pdf=<tab>[&layout=cards]  PDF for a learner
+   ?pack=<id>       a learner's pack of decks                                              */
+var SECTIONS={home:'', study:'', learner:'learner', teacher:'', packView:''}, contentsReady=false;
+function only(id){ for(var k in SECTIONS){ $(k).className=(SECTIONS[k]?SECTIONS[k]+' ':'')+(k===id?'':'hidden'); } window.scrollTo(0,0); }
+function learnerMode(){ return !!(studyTab()||learnerTab()||packId()); }
 function findDeck(tab){ for(var i=0;i<allDecks.length;i++) if(allDecks[i].tab===tab) return allDecks[i]; return null; }
 function studyTab(){ return qParam('study'); }
+function packId(){ return qParam('pack'); }
 function route(){
-  var lt=learnerTab(), st=studyTab();
+  var lt=learnerTab(), st=studyTab(), pk=packId();
+  $('topNav').style.display=learnerMode()?'none':'';
+  $('navTeacher').className=location.hash==='#teacher'?'active':''; $('navDecks').className=location.hash==='#teacher'?'':'active';
+  if(location.hash==='#teacher' && !learnerMode()) return showTeacher();
   if(lt && !location.hash) return showLearner(lt);
   if(st){
     var sd=findDeck(st);
-    $('topNav').style.display='none'; $('backBtn').style.display='none';
     $('shareBtn').style.display='none';
+    if(pk){ $('backBtn').style.display=''; $('backBtn').textContent='← Back to my vocabulary'; } else $('backBtn').style.display='none';
     if(sd) return showDeck(sd);
-    $('home').className='hidden'; $('study').className=''; $('deckTitle').textContent='Deck not found';
+    only('study'); $('deckTitle').textContent='Deck not found';
     $('modeCards').className='hidden'; $('modeList').className='hidden';
     $('studyState').className='err'; $('studyState').innerHTML='This deck was not found. Please ask your trainer for a new link.';
     return;
   }
+  if(pk) return showPack(pk);
   var m=/deck=([^&]+)/.exec(location.hash);
   if(m){
     var d=findDeck(decodeURIComponent(m[1]));
@@ -434,19 +590,22 @@ function route(){
   }
   showHome();
 }
-window.onhashchange=function(){ if(decks.length) route(); };
-function goHome(){ if(location.hash) location.hash=''; else showHome(); }
+window.onhashchange=function(){ if(contentsReady) route(); };
+function packBack(){ return '?pack='+encodeURIComponent(packId())+(/[?&]sheet=/.test(location.search)?'&sheet='+sheetId():''); }
+function goHome(){
+  if(studyTab()){ if(packId()) location.href=packBack(); return; }
+  if(location.hash) location.hash=''; else showHome();
+}
 function openDeck(n){ location.hash='deck='+encodeURIComponent(decks[n].tab); }
 function showHome(){
-  if(studyTab()) return;
-  if(learnerTab()){ location.href=location.pathname+(/[?&]sheet=/.test(location.search)?'?sheet='+sheetId():''); return; }
-  $('home').className=''; $('study').className='hidden'; $('learner').className='learner hidden'; window.scrollTo(0,0);
+  if(learnerMode()){ location.href=location.pathname+(/[?&]sheet=/.test(location.search)?'?sheet='+sheetId():''); return; }
+  only('home'); document.title='Flashcards | Emerald Language Learning';
 }
 function reloadAll(){ cache={}; loadContents(); }
 
 /* ---------- Study ---------- */
 function showDeck(deck){
-  $('home').className='hidden'; $('study').className=''; $('learner').className='learner hidden'; window.scrollTo(0,0);
+  only('study');
   cur.deck=deck; $('deckTitle').textContent=deck.title; document.title=deck.title+' | Flashcards';
   $('modeCards').className='hidden'; $('modeList').className='hidden';
   $('studyState').className='state'; $('studyState').innerHTML='<div class="spinner"></div>Loading cards…';
@@ -602,14 +761,14 @@ var pdfDoc=null, pdfName='';
 var JSPDF_URLS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'];
 
 function showLearner(tab){
-  $('home').className='hidden'; $('study').className='hidden'; $('learner').className='learner';
-  $('topNav').style.display='none';
+  only('learner');
+  if(packId()){ $('lBack').href=packBack(); $('lBack').className='alt'; }
   var deck=findDeck(tab);
   if(!deck){ showLearnerError('This vocabulary list was not found. Please ask your trainer for a new link.'); return; }
   document.title=deck.title+' | Your vocabulary';
   $('lTitle').textContent=deck.title;
   $('lDesc').textContent=deck.desc||'';
-  $('lStudy').href='?study='+encodeURIComponent(deck.tab)+(/[?&]sheet=/.test(location.search)?'&sheet='+sheetId():'');
+  $('lStudy').href='?study='+encodeURIComponent(deck.tab)+(packId()?'&pack='+encodeURIComponent(packId()):'')+(/[?&]sheet=/.test(location.search)?'&sheet='+sheetId():'');
   var layout=qParam('layout')==='cards'?'cards':'list';
   loadDeck(deck, function(cards, err){
     if(!cards || !cards.length){ showLearnerError('This vocabulary list is empty or could not be loaded. Please try again later.'); return; }
@@ -624,7 +783,7 @@ function showLearner(tab){
   });
 }
 function showLearnerError(msg){
-  $('home').className='hidden'; $('learner').className='learner'; $('topNav').style.display='none';
+  only('learner');
   $('lStatus').className='err'; $('lStatus').innerHTML=esc(msg);
 }
 function savePdf(){ if(pdfDoc) pdfDoc.save(pdfName); }
@@ -666,22 +825,23 @@ function buildPdf(deck, cards, layout, cb){
       doc.addFileToVFS('Sans-Bold.ttf', a.bold); doc.addFont('Sans-Bold.ttf','Sans','bold');
       doc.addFileToVFS('Sans-Italic.ttf', a.ital); doc.addFont('Sans-Italic.ttf','Sans','italic');
       doc.setProperties({title:deck.title, subject:'Vocabulary', author:'Emerald Language Learning', creator:'Emerald Language Learning flashcards'});
-      if(layout==='cards') pdfCards(doc, deck, cards, a); else pdfList(doc, deck, cards, a);
+      if(layout==='cards') pdfCards(doc, deck, cards, a); else { pdfList(doc, deck, cards, a, false); pdfFooter(doc, deck.title); }
       cb(doc);
     }catch(e){ cb(null, e.message||e); }
   }, function(e){ cb(null, e); });
 }
 var C_DARK=[69,120,101], C_EM=[73,177,144], C_SOFT=[114,177,160], C_TXT=[50,50,50], C_GREY=[119,119,119], C_LINE=[218,218,218];
 function lh(pt){ return pt*0.3528*1.3; }
-function pdfFooter(doc, deck){
+function pdfFooter(doc, label){
   var n=doc.getNumberOfPages(), i;
   for(i=1;i<=n;i++){
     doc.setPage(i); doc.setFont('Sans','normal'); doc.setFontSize(8); doc.setTextColor(C_GREY[0],C_GREY[1],C_GREY[2]);
-    doc.text('Emerald Language Learning · '+deck.title, 18, 289);
+    doc.text('Emerald Language Learning · '+label, 18, 289);
     doc.text('Page '+i+' / '+n, 192, 289, {align:'right'});
   }
 }
-function pdfList(doc, deck, cards, a){
+function pdfList(doc, deck, cards, a, newPage){
+  if(newPage) doc.addPage();
   var M=18, W=174, colF=52, xB=M+colF+6, wB=W-colF-6, y, bottom=280;
   doc.addImage('data:image/png;base64,'+a.logo, 'PNG', M, 14, 40.8, 12);
   doc.setDrawColor(C_LINE[0],C_LINE[1],C_LINE[2]); doc.setLineWidth(0.3); doc.line(M, 31, M+W, 31);
@@ -714,7 +874,21 @@ function pdfList(doc, deck, cards, a){
     y=top+h;
     doc.setDrawColor(C_LINE[0],C_LINE[1],C_LINE[2]); doc.setLineWidth(0.2); doc.line(M, y-4.2, M+W, y-4.2);
   });
-  pdfFooter(doc, deck);
+}
+/* Several decks in one PDF (learner packs) */
+function buildPackPdf(title, items, cb){
+  loadPdfAssets(function(a){
+    try{
+      var doc=new window.jspdf.jsPDF({unit:'mm', format:'a4', compress:true});
+      doc.addFileToVFS('Sans-Regular.ttf', a.reg); doc.addFont('Sans-Regular.ttf','Sans','normal');
+      doc.addFileToVFS('Sans-Bold.ttf', a.bold); doc.addFont('Sans-Bold.ttf','Sans','bold');
+      doc.addFileToVFS('Sans-Italic.ttf', a.ital); doc.addFont('Sans-Italic.ttf','Sans','italic');
+      doc.setProperties({title:title, subject:'Vocabulary', author:'Emerald Language Learning'});
+      items.forEach(function(it, i){ pdfList(doc, it.deck, it.cards, a, i>0); });
+      pdfFooter(doc, title);
+      cb(doc);
+    }catch(e){ cb(null, e.message||e); }
+  }, function(e){ cb(null, e); });
 }
 function pdfCards(doc, deck, cards, a){
   var X0=10, Y0=10, CW=95, CH=69.25, per=8, p, k, idx, slot, first=true;
@@ -739,22 +913,30 @@ function pdfCards(doc, deck, cards, a){
 }
 
 /* ---------- Share modal (trainer) ---------- */
-var shareDeck=null;
-function openShare(deck){ closeMenus(); shareDeck=deck; $('shDeck').textContent=deck.title; $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=navigator.share?'btn ghost':'btn ghost hidden'; updateShare(); }
+var shareDeck=null, sharePack=null;
+function openShare(deck){ closeMenus(); shareDeck=deck; sharePack=null; $('shTitle').textContent='Share with a learner'; $('shDeck').textContent=deck.title; $('shOpts').style.display=''; openShareBox(); }
+function openSharePack(pk){ sharePack=pk; shareDeck=null; $('shTitle').textContent='Share this pack'; $('shDeck').textContent=pk.title+(pk.learner?' · for '+pk.learner:''); $('shOpts').style.display='none'; openShareBox(); }
+function openShareBox(){ $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=navigator.share?'btn ghost':'btn ghost hidden'; updateShare(); }
 function closeShare(){ $('shareOverlay').className='overlay hidden'; }
 function shareLayout(){ var r=document.getElementsByName('shLayout'); for(var i=0;i<r.length;i++) if(r[i].checked) return r[i].value; return 'list'; }
+function siteBase(){ return location.protocol+'//'+location.host+location.pathname; }
+function sheetQ(){ return /[?&]sheet=/.test(location.search)?'&sheet='+sheetId():''; }
 function shareUrl(){
-  var base=location.protocol+'//'+location.host+location.pathname, lay=shareLayout();
-  var q=(lay==='study'?'?study=':'?pdf=')+encodeURIComponent(shareDeck.tab);
+  if(sharePack) return siteBase()+'?pack='+encodeURIComponent(sharePack.id)+sheetQ();
+  var lay=shareLayout(), q=(lay==='study'?'?study=':'?pdf=')+encodeURIComponent(shareDeck.tab);
   if(lay==='cards') q+='&layout=cards';
-  if(/[?&]sheet=/.test(location.search)) q+='&sheet='+sheetId();
-  return base+q;
+  return siteBase()+q+sheetQ();
+}
+function shareText(){
+  if(sharePack) return 'Here is your vocabulary pack ('+sharePack.title+'). Open this link to study the decks online or download them as PDFs:';
+  var t=shareDeck.title;
+  return 'Here is the vocabulary from our session ('+t+'). '+(shareLayout()==='study'?'Open this link to study it as flashcards on your phone, tablet or computer:':'Open this link to download it as a PDF:');
 }
 function updateShare(){
-  var u=shareUrl(), t=shareDeck.title, study=shareLayout()==='study';
+  var u=shareUrl(), t=sharePack?sharePack.title:shareDeck.title;
+  var hello=sharePack&&sharePack.learner?'Hello '+sharePack.learner.split(' ')[0]+',':'Hello,';
   $('shLink').value=u; $('shTest').href=u;
-  var line=study?'Open this link to study it as flashcards on your phone, tablet or computer:':'Open this link to download it as a PDF:';
-  $('shMail').href='mailto:?subject='+encodeURIComponent('Your vocabulary: '+t)+'&body='+encodeURIComponent('Hello,\n\nHere is the vocabulary from our session ('+t+'). '+line+'\n'+u+'\n\nSee you soon!');
+  $('shMail').href='mailto:?subject='+encodeURIComponent('Your vocabulary: '+t)+'&body='+encodeURIComponent(hello+'\n\n'+shareText()+'\n'+u+'\n\nSee you soon!');
 }
 function copyShare(){
   var u=$('shLink').value;
@@ -762,11 +944,268 @@ function copyShare(){
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(u).then(done, legacy); } else legacy();
   function legacy(){ var f=$('shLink'); f.focus(); f.select(); try{ f.setSelectionRange(0,9999); }catch(e){} try{ if(document.execCommand('copy')) done(); else $('shOk').textContent='Select the link above and copy it.'; }catch(e){ $('shOk').textContent='Select the link above and copy it.'; } }
 }
-function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+shareDeck.title, text:shareLayout()==='study'?'Study the vocabulary from our session:':'Download the vocabulary from our session as a PDF:', url:shareUrl()}); }catch(e){} }
+function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), text:shareText(), url:shareUrl()}); }catch(e){} }
 document.addEventListener('keydown', function(e){ if(e.keyCode===27) closeShare(); });
 
-if(learnerTab() && !location.hash){ $('home').className='hidden'; $('learner').className='learner'; $('topNav').style.display='none'; }
-if(studyTab()){ $('home').className='hidden'; $('study').className=''; $('topNav').style.display='none'; $('backBtn').style.display='none'; $('shareBtn').style.display='none'; }
+/* ---------- Teacher area (PIN) ---------- */
+/* Same trainer PIN as Emerald-web. Only keeps learners out of the menu; the save script checks the PIN again. */
+var PIN_HASH = 2085847969;
+function pinHash(s){ var x=5381; for(var k=0;k<s.length;k++){ x=((x*33)^s.charCodeAt(k))>>>0; } return x; }
+function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return window['__'+k]||null; } }
+function ssSet(k,v){ try{ if(v==null) sessionStorage.removeItem(k); else sessionStorage.setItem(k,v); }catch(e){} window['__'+k]=v; }
+var pinEntry='', tReady=false, editingTab='', editingPack='', packsCache=null;
+
+function showTeacher(){
+  only('teacher'); document.title='Teachers | Flashcards';
+  if(ssGet('ell-fc-pin')){ $('tLocked').className='hidden'; $('tOpen').className=''; initTeacher(); }
+  else { $('tLocked').className=''; $('tOpen').className='hidden'; buildKeys(); }
+}
+function buildKeys(){
+  if($('keys').innerHTML) return;
+  var order=['1','2','3','4','5','6','7','8','9','clr','0','del'], html='';
+  order.forEach(function(v){ var lab=v==='clr'?'Clear':v==='del'?'⌫':v; html+='<button class="'+(v.length>1?'fn':'')+'" onclick="pinPress(\''+v+'\')" aria-label="'+(v==='del'?'Delete':lab)+'">'+lab+'</button>'; });
+  $('keys').innerHTML=html;
+}
+function drawDots(){ var d=$('dots').children; for(var k=0;k<d.length;k++) d[k].className=k<pinEntry.length?'on':''; }
+function pinPress(v){
+  $('perr').textContent='';
+  if(v==='del'){ pinEntry=pinEntry.slice(0,-1); return drawDots(); }
+  if(v==='clr'){ pinEntry=''; return drawDots(); }
+  if(pinEntry.length>=4) return;
+  pinEntry+=v; drawDots();
+  if(pinEntry.length===4) setTimeout(function(){
+    if(pinHash(pinEntry)===PIN_HASH){ ssSet('ell-fc-pin', pinEntry); pinEntry=''; drawDots(); showTeacher(); }
+    else { $('perr').textContent='Wrong PIN. Try again.'; var d=$('dots'); d.className='dots shake'; setTimeout(function(){ d.className='dots'; },450); pinEntry=''; drawDots(); }
+  },150);
+}
+document.addEventListener('keydown', function(e){
+  if($('teacher').className.indexOf('hidden')>=0 || $('tLocked').className==='hidden') return;
+  if(e.key>='0' && e.key<='9') pinPress(e.key); else if(e.keyCode===8) pinPress('del');
+});
+function lockTeacher(){ ssSet('ell-fc-pin', null); showTeacher(); }
+
+function scriptUrl(){ return lsGet('ell-fc-script') || SCRIPT_URL; }
+function api(action, data, cb){
+  var url=scriptUrl();
+  if(!url) return cb({ok:false, error:'Saving is not connected yet (Teachers › Setup).'});
+  data.action=action; data.pin=ssGet('ell-fc-pin');
+  var x=new XMLHttpRequest(); x.open('POST', url, true); x.setRequestHeader('Content-Type','text/plain;charset=utf-8'); x.timeout=45000;
+  x.onload=function(){ var r; try{ r=JSON.parse(x.responseText); }catch(e){ r={ok:false, error:'Unexpected reply from the save script. Check the Web app URL and that access is set to “Anyone”.'}; } if(r && r.error==='Wrong PIN.'){ ssSet('ell-fc-pin', null); } cb(r); };
+  x.onerror=function(){ cb({ok:false, error:'The save script could not be reached.'}); };
+  x.ontimeout=function(){ cb({ok:false, error:'The save script took too long to answer.'}); };
+  x.send(JSON.stringify(data));
+}
+
+function initTeacher(){
+  $('tWarn').className=scriptUrl()?'err hidden':'err';
+  $('sUrl').value=scriptUrl()||'';
+  fillFromSelect();
+  if(!tReady){ tReady=true; clearDeckForm(); renderPackChecks(); }
+}
+function tTab(t){
+  ['Deck','Pack','List','Setup'].forEach(function(k){ $('tp'+k).className=k===t?(k==='Setup'?'setup':''):'hidden'; $('tt'+k).className=k===t?'on':''; });
+  if(t==='List') loadPackList();
+  if(t==='Pack') renderPackChecks();
+}
+function today(){ var d=new Date(); return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear(); }
+
+/* Session deck editor */
+function fillFromSelect(){
+  var sel=$('dFrom'), keep=sel.value, html='<option value="">A blank deck</option>';
+  allDecks.forEach(function(d){ html+='<option value="'+esc(d.tab)+'">'+esc(d.title)+(d.hidden?' (not on home page)':'')+'</option>'; });
+  sel.innerHTML=html; sel.value=keep;
+}
+function rowHTML(c){
+  c=c||{};
+  return '<tr><td><input class="eF" value="'+esc(c.front)+'" aria-label="Word"></td><td><input class="eB" value="'+esc(c.back)+'" aria-label="Meaning"></td>'+
+    '<td><input class="eE" value="'+esc(c.ex)+'" aria-label="Example"></td><td><input class="eN" value="'+esc(c.notes)+'" aria-label="Notes"></td>'+
+    '<td><button class="del" title="Remove" aria-label="Remove this word" onclick="var r=this.parentNode.parentNode;r.parentNode.removeChild(r)">×</button></td></tr>';
+}
+function addRow(c){ var tb=$('edBody'), t=document.createElement('tbody'); t.innerHTML=rowHTML(c); tb.appendChild(t.firstChild); }
+function focusLast(){ var i=$('edBody').querySelectorAll('.eF'); if(i.length) i[i.length-1].focus(); }
+function clearDeckForm(){
+  editingTab=''; $('dFrom').value=''; $('dModeBox').className='hidden';
+  $('dTitle').value='Session – '+today(); $('dWho').value=''; $('dLevel').value=''; $('dDesc').value=''; $('dShow').checked=false;
+  $('edBody').innerHTML=''; for(var i=0;i<5;i++) addRow();
+  $('dMsg').textContent=''; $('dMsg').className='msg';
+}
+function startFrom(){
+  var d=findDeck($('dFrom').value);
+  if(!d){ clearDeckForm(); return; }
+  $('dMsg').textContent='Loading…';
+  loadDeck(d, function(cards){
+    $('dMsg').textContent='';
+    editingTab=d.tab; $('dModeBox').className=''; $('dMode').value=d.hidden?'update':'new';
+    $('dTitle').value=d.title; $('dWho').value=d.cat||''; $('dLevel').value=d.level||''; $('dDesc').value=d.desc||''; $('dShow').checked=!d.hidden;
+    $('edBody').innerHTML=''; (cards||[]).forEach(addRow); addRow();
+  });
+}
+function togglePaste(){ var b=$('pasteBox'); b.className=b.className?'':'hidden'; if(!b.className) $('pasteText').focus(); }
+function parseLine(line){
+  var parts, ex='';
+  if(line.indexOf('\t')>=0){ parts=line.split('\t'); return {front:parts[0], back:parts[1]||'', ex:parts[2]||'', notes:parts[3]||''}; }
+  var bar=line.split('|'); if(bar.length>1){ ex=bar.slice(1).join('|'); line=bar[0]; }
+  var m=/^(.*?)\s+[-–—=:]\s+(.*)$/.exec(line) || /^(.*?)\s*[=:]\s*(.*)$/.exec(line);
+  return m ? {front:m[1], back:m[2], ex:ex} : {front:line, back:'', ex:ex};
+}
+function importPaste(){
+  var lines=$('pasteText').value.split(/\r?\n/), n=0;
+  var empties=$('edBody').querySelectorAll('tr'); // drop blank rows first
+  for(var i=0;i<empties.length;i++){ var r=empties[i]; if(!r.querySelector('.eF').value && !r.querySelector('.eB').value) r.parentNode.removeChild(r); }
+  lines.forEach(function(l){ l=l.replace(/^\s*[\d]+[.)]\s*/,'').replace(/^\s*[•*-]\s+/,'').trim(); if(!l) return; var c=parseLine(l); c.front=c.front.trim(); c.back=c.back.trim(); c.ex=(c.ex||'').trim(); addRow(c); n++; });
+  addRow(); $('pasteText').value=''; $('pasteBox').className='hidden';
+  $('dMsg').className='msg'; $('dMsg').textContent=n+' word'+(n===1?'':'s')+' added. Check them before saving.';
+}
+function editorCards(){
+  var rows=$('edBody').querySelectorAll('tr'), out=[];
+  for(var i=0;i<rows.length;i++){
+    var c={front:rows[i].querySelector('.eF').value.trim(), back:rows[i].querySelector('.eB').value.trim(), example:rows[i].querySelector('.eE').value.trim(), notes:rows[i].querySelector('.eN').value.trim()};
+    if(c.front||c.back) out.push(c);
+  }
+  return out;
+}
+function saveDeckUI(){
+  var cards=editorCards(), msg=$('dMsg');
+  msg.className='msg bad';
+  if(!$('dTitle').value.trim()) { msg.textContent='Give the deck a title.'; return $('dTitle').focus(); }
+  if(!cards.length) { msg.textContent='Add at least one word.'; return; }
+  var missing=cards.filter(function(c){ return !c.front||!c.back; }).length;
+  if(missing && !confirm(missing+' word(s) have no meaning or no word. Save anyway?')) return;
+  var upd=editingTab && $('dMode').value==='update';
+  msg.className='msg'; msg.textContent='Saving to the Google Sheet…'; $('dSave').disabled=true;
+  api('saveDeck', {tab:upd?editingTab:'', title:$('dTitle').value.trim(), desc:$('dDesc').value.trim(), level:$('dLevel').value.trim(), category:$('dWho').value.trim(), show:$('dShow').checked, cards:cards}, function(r){
+    $('dSave').disabled=false;
+    if(!r.ok){ msg.className='msg bad'; msg.textContent=r.error||'Could not save.'; if(!ssGet('ell-fc-pin')) showTeacher(); return; }
+    cache[r.tab]=cards.map(function(c){ return {front:c.front, back:c.back, ex:c.example, notes:c.notes}; });
+    msg.textContent='Saved as “'+r.tab+'”.';
+    loadContents(function(){
+      fillFromSelect(); renderDecks(); renderPackChecks();
+      var d=findDeck(r.tab) || {title:$('dTitle').value.trim(), tab:r.tab, desc:$('dDesc').value.trim(), hidden:!$('dShow').checked};
+      if(!findDeck(r.tab)) allDecks.push(d);
+      editingTab=r.tab; $('dFrom').value=r.tab; $('dModeBox').className=''; $('dMode').value='update';
+      openShare(d);
+    });
+  });
+}
+
+/* Learner packs */
+function packTitleHint(){ var w=$('pWho').value.trim(); $('pTitle').placeholder=w?w.split(' ')[0]+'’s vocabulary':'Your vocabulary'; }
+var packSel={};
+function renderPackChecks(){
+  var q=($('pSearch').value||'').toLowerCase(), html='';
+  allDecks.forEach(function(d){
+    if(q && (d.title+' '+d.cat+' '+d.desc).toLowerCase().indexOf(q)<0 && !packSel[d.tab]) return;
+    var meta=[d.cat,d.level,d.hidden?'not on home page':''].filter(Boolean).join(' · ');
+    html+='<label><input type="checkbox" value="'+esc(d.tab)+'" '+(packSel[d.tab]?'checked':'')+' onchange="packSel[this.value]=this.checked;countPack()"><span>'+esc(d.title)+(meta?'<small>'+esc(meta)+'</small>':'')+'</span></label>';
+  });
+  $('pDecks').innerHTML=html||'<p>No decks yet.</p>'; countPack();
+}
+function countPack(){ var n=0; for(var k in packSel) if(packSel[k]) n++; $('pCount').textContent='('+n+' selected)'; return n; }
+function clearPackForm(){ editingPack=''; packSel={}; $('pWho').value=''; $('pTitle').value=''; $('pMsg').value=''; $('pSearch').value=''; $('pMsgOut').textContent=''; packTitleHint(); renderPackChecks(); }
+function savePackUI(){
+  var out=$('pMsgOut'), chosen=[];
+  allDecks.forEach(function(d){ if(packSel[d.tab]) chosen.push(d.tab); });
+  for(var k in packSel) if(packSel[k] && chosen.indexOf(k)<0) chosen.push(k);
+  out.className='msg bad';
+  if(!$('pWho').value.trim()){ out.textContent='Enter the learner’s name.'; return $('pWho').focus(); }
+  if(!chosen.length){ out.textContent='Choose at least one deck.'; return; }
+  var title=$('pTitle').value.trim()||$('pTitle').placeholder;
+  out.className='msg'; out.textContent='Saving to the Google Sheet…'; $('pSave').disabled=true;
+  api('savePack', {id:editingPack, title:title, learner:$('pWho').value.trim(), message:$('pMsg').value.trim(), decks:chosen}, function(r){
+    $('pSave').disabled=false;
+    if(!r.ok){ out.className='msg bad'; out.textContent=r.error||'Could not save.'; if(!ssGet('ell-fc-pin')) showTeacher(); return; }
+    editingPack=r.id; packsCache=null;
+    out.textContent='Saved. Editing this pack later keeps the same link.';
+    openSharePack({id:r.id, title:title, learner:$('pWho').value.trim()});
+  });
+}
+function loadPacks(cb){
+  if(packsCache) return cb(packsCache);
+  get(tabUrl(PACKS_TAB), function(t){
+    var rows=parseCSV(t), head=(rows[0]||[]).map(function(h){return h.trim().toLowerCase();});
+    if(head.indexOf('pack id')<0) return cb([]);          // no Packs tab yet
+    packsCache=toObjects(t).map(function(r){
+      return {id:r['pack id'], title:r['pack title'], learner:r['learner'], message:r['message'], decks:(r['decks']||'').split(/\n/).map(function(x){return x.trim();}).filter(Boolean), updated:r['updated']||r['created']};
+    }).filter(function(p){ return p.id; });
+    cb(packsCache);
+  }, function(err){ cb(null, err); });
+}
+function loadPackList(){
+  $('listState').className='state'; $('listState').innerHTML='<div class="spinner"></div>Loading packs…'; $('plBody').innerHTML='';
+  packsCache=null;
+  loadPacks(function(packs, err){
+    if(!packs){ $('listState').className='err'; $('listState').textContent='Packs could not be loaded ('+err+').'; return; }
+    $('listState').className=packs.length?'state hidden':'state'; $('listState').textContent='No packs yet. Create one in “Learner pack”.';
+    window.__packs=packs;
+    $('plBody').innerHTML=packs.slice().reverse().map(function(p){
+      var i=packs.indexOf(p);
+      return '<tr><td>'+esc(p.learner)+'</td><td>'+esc(p.title)+'</td><td>'+p.decks.length+'</td><td>'+esc(p.updated)+'</td><td>'+
+        '<button class="btn small" onclick="openSharePack(__packs['+i+'])">Share</button> <button class="btn ghost small" onclick="editPack(__packs['+i+'])">Edit</button></td></tr>';
+    }).join('');
+  });
+}
+function editPack(p){
+  editingPack=p.id; packSel={}; p.decks.forEach(function(t){ packSel[t]=true; });
+  $('pWho').value=p.learner||''; $('pTitle').value=p.title||''; $('pMsg').value=p.message||''; $('pSearch').value=''; packTitleHint();
+  tTab('Pack'); $('pMsgOut').className='msg'; $('pMsgOut').textContent='Editing “'+p.title+'”. Saving keeps the same link.';
+}
+function saveSetup(){
+  var u=$('sUrl').value.trim();
+  if(u && !/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){ $('sMsg').className='msg bad'; $('sMsg').textContent='This does not look like an Apps Script Web app URL.'; return; }
+  lsSet('ell-fc-script', u||null); $('tWarn').className=scriptUrl()?'err hidden':'err';
+  if(!scriptUrl()){ $('sMsg').className='msg'; $('sMsg').textContent='Cleared.'; return; }
+  $('sMsg').className='msg'; $('sMsg').textContent='Testing…';
+  api('ping', {}, function(r){ $('sMsg').className=r.ok?'msg':'msg bad'; $('sMsg').textContent=r.ok?'Connected. Decks and packs will be saved to the sheet.':(r.error||'Not connected.'); });
+}
+
+/* ---------- Learner pack page ---------- */
+var packItems=[], curPack=null;
+function showPack(id){
+  only('packView');
+  loadPacks(function(packs, err){
+    var p=null; (packs||[]).forEach(function(x){ if(x.id===id) p=x; });
+    if(!p){ $('pkState').className='err'; $('pkState').innerHTML=packs?'This link does not match a vocabulary pack. Please ask your trainer for a new link.':'Your vocabulary could not be loaded. Check your internet connection and open the link again.'; return; }
+    curPack=p; document.title=p.title+' | Emerald Language Learning';
+    $('pkWho').textContent=p.learner?'For '+p.learner:''; $('pkTitle').textContent=p.title;
+    if(p.message){ $('pkMsg').textContent=p.message; $('pkMsg').className='packmsg'; }
+    var html='', q='&pack='+encodeURIComponent(p.id)+sheetQ(), n=0;
+    p.decks.forEach(function(tab, i){
+      var d=findDeck(tab); if(!d) return; n++;
+      var meta=[d.level].filter(Boolean).join(' · ');
+      html+='<article class="deck"><div class="circ">'+ICONS[i%ICONS.length]+'</div><h2>'+esc(d.title)+'</h2>'+(meta?'<div class="meta">'+esc(meta)+'</div>':'')+'<p>'+esc(d.desc)+'</p><div class="acts">'+
+        '<a class="btn" href="?study='+encodeURIComponent(d.tab)+q+'">Study</a>'+
+        '<a class="btn ghost" href="?pdf='+encodeURIComponent(d.tab)+q+'">PDF</a></div></article>';
+    });
+    $('pkGrid').innerHTML=html;
+    $('pkState').className=n?'state hidden':'state'; $('pkState').textContent='This pack is empty for now.';
+    $('pkAllBox').className=n>1?'':'hidden';
+  });
+}
+function packPdf(){
+  var tabs=curPack.decks.filter(function(t){ return findDeck(t); }), items=[], left=tabs.length;
+  $('pkAll').disabled=true; $('pkAllMsg').className='msg'; $('pkAllMsg').textContent='Preparing your PDF…';
+  tabs.forEach(function(t, i){
+    loadDeck(findDeck(t), function(cards){
+      items[i]={deck:findDeck(t), cards:cards||[]};
+      if(--left) return;
+      items=items.filter(function(x){ return x.cards.length; });
+      buildPackPdf(curPack.title, items, function(doc, e){
+        $('pkAll').disabled=false;
+        if(!doc){ $('pkAllMsg').className='msg bad'; $('pkAllMsg').textContent='The PDF could not be prepared ('+e+').'; return; }
+        $('pkAllMsg').textContent='';
+        doc.save(curPack.title.replace(/[\\\/:*?"<>|]/g,'')+'.pdf');
+      });
+    });
+  });
+}
+
+/* Show the right screen straight away while the sheet loads */
+if(learnerMode()){
+  $('topNav').style.display='none'; $('shareBtn').style.display='none';
+  if(studyTab()){ only('study'); $('backBtn').style.display=packId()?'':'none'; }
+  else if(learnerTab()) only('learner');
+  else only('packView');
+} else if(location.hash==='#teacher') only('teacher');
 loadContents();
 </script>
 </body>
