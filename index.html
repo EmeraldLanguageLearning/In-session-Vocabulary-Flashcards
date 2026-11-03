@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Flashcards">
+<meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#49B190">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
@@ -201,6 +202,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .privacy{flex-basis:100%;margin:0;font-size:.82rem;color:#8a4b3c;background:#fff6f4;border-radius:4px;padding:8px 12px}
 .privnote{font-weight:400;color:var(--text);font-size:.78rem;margin-top:4px}
 fieldset.who{border:0;padding:0;margin:0 0 16px}
+.editing{background:#FFF8E6;border:1px solid #F0D9A0;border-radius:4px;padding:10px 14px;margin-bottom:16px;color:#6b5420}
 fieldset.who legend{font-weight:600;color:var(--text-strong);margin-bottom:6px}
 fieldset.who label{display:block;margin:4px 0;cursor:pointer}
 fieldset.who input{accent-color:var(--emerald)}
@@ -226,10 +228,46 @@ fieldset.who input{accent-color:var(--emerald)}
 .say.inline{position:static;display:inline-flex;width:30px;height:30px;vertical-align:middle;margin-right:8px}
 .say.inline svg{width:16px;height:16px}
 
+/* ---------- Follow the device's settings ---------- */
+:root{color-scheme:light dark}
+@media (prefers-color-scheme: dark){
+  :root{
+    --emerald:#49B190;--emerald-link:#6FD0AD;--emerald-dark:#86D1B6;--emerald-soft:#8FC7B6;--emerald-hover:#3f9c7e;
+    --text-strong:#ECF1EF;--text:#B4BDBA;--bg:#141918;--bg-soft:#1E2523;--line:#34403C;--line-strong:#5A6763;
+    --card:#1A201E;--tint:#203530;--warn-bg:#3A2622;--warn-line:#6B3E33;--warn-text:#F0B4A4;
+  }
+  html,body{background:var(--bg)}
+  .top,.modal,.dl-menu,.face.back,.btn.ghost,.btn.again,.chips button,.say,.look,.keys button.fn,
+  .filters input,.filters select,.form input,.form select,.form textarea,.ed input,#pasteText,#pSearch,#sUrl{background:var(--card)}
+  .btn.ghost:hover,.say:hover,.say:active,.lkdef:hover,.look:hover,.keys button:active,.btn.again:hover{background:var(--tint)}
+  .chips button.on{background:var(--emerald);color:#fff}
+  .pubtag{background:var(--tint)}
+  .err,.privacy{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-text)}
+  .btn.again{color:#F0A28D;border-color:#8a5446}
+  .editing{background:#3A3220;border-color:#6b5a2e;color:#F1DDA6}
+  .perr,.msg.bad,.ed .del:hover{color:#F28B73}
+  .overlay{background:rgba(0,0,0,.6)}
+  /* the official logo stays as it is, on a light plate so it remains legible */
+  .top img{background:#F4F7F6;border-radius:6px;padding:4px 8px;box-sizing:content-box}
+  .progress{background:var(--line)}
+}
+@media (prefers-reduced-motion: reduce){
+  .card,.progress div{-webkit-transition:none;transition:none}
+  .spinner{animation-duration:3s;-webkit-animation-duration:3s}
+  .dots.shake{animation:none;-webkit-animation:none}
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: light){
+  :root{--text:#555;--line:#999}
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark){
+  :root{--text:#D6DDDA;--line:#6B7A75}
+}
+
 /* Print */
 #printArea{display:none}
 @media print{
   @page{size:A4 portrait;margin:10mm}
+  html,body{background:#fff!important;color-scheme:light}
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
   #printArea{display:block;position:absolute;left:0;top:0;width:100%}
@@ -394,6 +432,7 @@ fieldset.who input{accent-color:var(--emerald)}
       </div>
 
       <div id="tpPack" class="hidden">
+        <div id="pEditing" class="hidden">Editing “<b id="pEditingTitle"></b>”. Saving changes this pack (its link stays the same). <a href="#teacher" onclick="clearPackForm();return false;">Start a new pack instead</a></div>
         <fieldset class="who">
           <legend>Who is this pack for?</legend>
           <label><input type="radio" name="pFor" value="learner" checked onchange="packFor()"> One learner: private link, never listed on the site</label>
@@ -1283,7 +1322,7 @@ function renderPackChecks(){
   $('pDecks').innerHTML=html||'<p>No decks yet.</p>'; countPack();
 }
 function countPack(){ var n=0; for(var k in packSel) if(packSel[k]) n++; $('pCount').textContent='('+n+' selected)'; return n; }
-function clearPackForm(){ editingPack=''; packSel={}; $('pWho').value=''; $('pTitle').value=''; $('pCat').value=''; $('pMsg').value=''; $('pSearch').value=''; $('pMsgOut').textContent=''; setPackFor(false); renderPackChecks(); }
+function clearPackForm(){ editingPack=''; packSel={}; $('pSave').textContent='Save and share'; $('pEditing').className='hidden'; $('pWho').value=''; $('pTitle').value=''; $('pCat').value=''; $('pMsg').value=''; $('pSearch').value=''; $('pMsgOut').textContent=''; setPackFor(false); renderPackChecks(); }
 function savePackUI(){
   var out=$('pMsgOut'), chosen=[], pub=packIsPublic();
   allDecks.forEach(function(d){ if(packSel[d.tab]) chosen.push(d.tab); });
@@ -1297,8 +1336,10 @@ function savePackUI(){
   api('savePack', {id:editingPack, public:pub, title:title, learner:learner, category:$('pCat').value.trim(), message:$('pMsg').value.trim(), decks:chosen}, function(r){
     $('pSave').disabled=false;
     if(!r.ok){ out.className='msg bad'; out.textContent=r.error||'Could not save.'; if(!ssGet('ell-fc-pin')) showTeacher(); return; }
-    editingPack=r.id; publicPacks=null;
-    out.textContent=pub?'Saved. It now appears under “Flash card packs”.':'Saved privately. Editing this pack later keeps the same link.';
+    var wasEditing=!!editingPack; publicPacks=null;
+    clearPackForm();                       /* next save always creates a NEW pack */
+    out.className='msg';
+    out.textContent=(wasEditing?'Changes saved to “'+title+'”. ':'“'+title+'” saved. ')+(pub?'It appears under “Flash card packs”. ':'')+'The form is ready for a new pack; to change a pack, use Saved packs › Edit.';
     openSharePack({id:r.id, title:title, learner:learner});
   });
 }
@@ -1341,7 +1382,8 @@ function editPack(p){
   editingPack=p.id; packSel={}; p.decks.forEach(function(t){ packSel[t]=true; });
   setPackFor(!!p.public);
   $('pWho').value=p.learner||''; $('pTitle').value=p.title||''; $('pCat').value=p.category||''; $('pMsg').value=p.message||''; $('pSearch').value=''; packTitleHint();
-  tTab('Pack'); $('pMsgOut').className='msg'; $('pMsgOut').textContent='Editing “'+p.title+'”. Saving keeps the same link.';
+  tTab('Pack'); $('pMsgOut').textContent='';
+  $('pSave').textContent='Save changes'; $('pEditing').className='editing'; $('pEditingTitle').textContent=p.title;
 }
 function saveSetup(){
   var u=$('sUrl').value.trim();
