@@ -287,7 +287,9 @@ fieldset.who input{accent-color:var(--emerald)}
 </head>
 <body>
 <header class="top">
-  <a href="#" onclick="goHome();return false;" aria-label="All decks"><img src="logo.png" width="306" height="90" alt="Emerald Language Learning"></a>
+  <a id="logoLink" href="https://emeraldlanguagelearning.github.io/Emerald-web/" aria-label="Emerald tools home"><img src="logo.png" width="306" height="90" alt="Emerald Language Learning"></a>
+  <script>/* In the Emerald Tools Android app, the logo goes back to the app's own home page */
+  if(window.EmeraldAndroid){ document.getElementById('logoLink').href='https://appassets.androidplatform.net/assets/index.html'; }</script>
   <nav id="topNav"><a id="navDecks" class="active" onclick="goHome()">Decks</a><a id="navPacks" onclick="location.hash='packs'">Packs</a><a id="navRefresh" onclick="reloadAll()" title="Load the latest cards from the sheet">Refresh</a><a id="navTeacher" onclick="location.hash='teacher'">Teachers</a></nav>
 </header>
 
