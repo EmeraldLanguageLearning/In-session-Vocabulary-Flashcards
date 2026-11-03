@@ -183,7 +183,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
   <section id="study" class="hidden">
     <div class="study-head">
       <h1 id="deckTitle"></h1>
-      <button class="btn ghost small" onclick="goHome()">← All decks</button>
+      <button id="backBtn" class="btn ghost small" onclick="goHome()">← All decks</button>
     </div>
     <div class="tabs" role="tablist">
       <button id="tabCards" class="on" role="tab" onclick="setMode('cards')">Cards</button>
@@ -222,7 +222,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
     </div>
 
     <div class="study-dl">
-      <button class="btn small" onclick="openShare(cur.deck)">Share PDF link</button>
+      <button id="shareBtn" class="btn small" onclick="openShare(cur.deck)">Share with a learner</button>
       <button class="btn ghost small" onclick="printDeck(cur.deck)">Print cards (PDF)</button>
       <button class="btn ghost small" onclick="downloadDeck(cur.deck,'csv')">Download CSV</button>
       <button class="btn ghost small" onclick="downloadDeck(cur.deck,'anki')">Download for Anki</button>
@@ -247,12 +247,13 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 <div id="shareOverlay" class="overlay hidden" onclick="if(event.target===this)closeShare()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shTitle">
     <button class="x" onclick="closeShare()" aria-label="Close">×</button>
-    <h3 id="shTitle">Share a PDF link</h3>
+    <h3 id="shTitle">Share with a learner</h3>
     <p id="shDeck" style="margin:0"></p>
     <fieldset>
       <legend>The learner gets</legend>
-      <label><input type="radio" name="shLayout" value="list" checked onchange="updateShare()"> A word list (word, meaning, example)</label>
-      <label><input type="radio" name="shLayout" value="cards" onchange="updateShare()"> Cut-out flashcards (print double-sided)</label>
+      <label><input type="radio" name="shLayout" value="study" checked onchange="updateShare()"> The deck online, to study as flashcards</label>
+      <label><input type="radio" name="shLayout" value="list" onchange="updateShare()"> A PDF word list (word, meaning, example)</label>
+      <label><input type="radio" name="shLayout" value="cards" onchange="updateShare()"> A PDF of cut-out flashcards (print double-sided)</label>
     </fieldset>
     <input id="shLink" class="link" readonly onclick="this.select()" aria-label="Link to send">
     <div class="row">
@@ -262,7 +263,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
       <a id="shTest" class="btn ghost" href="#" target="_blank" rel="noopener">Try it</a>
     </div>
     <div class="ok" id="shOk"></div>
-    <p style="font-size:.8rem;margin:6px 0 0">The PDF is made from the sheet when the learner opens the link, so it always has the latest cards. Decks set to “Show: No” can still be shared this way without appearing on the home page.</p>
+    <p style="font-size:.8rem;margin:6px 0 0">The link reads the sheet when the learner opens it, so it always has the latest cards. The online deck opens on its own, without the list of other decks. Decks set to “Show: No” can still be shared this way without appearing on the home page.</p>
   </div>
 </div>
 
@@ -397,7 +398,7 @@ function renderDecks(){
         '<button onclick="downloadDeck(decks['+n+'],\'anki\')">Anki<small>File › Import, tab-separated</small></button>'+
         '<button onclick="downloadDeck(decks['+n+'],\'quizlet\')">Quizlet<small>Paste into Import: tab + new line</small></button>'+
         '<button onclick="printDeck(decks['+n+'])">PDF cut-out cards<small>Print › Save as PDF</small></button>'+
-        '<button onclick="openShare(decks['+n+'])">Share PDF link<small>A link to send to a learner</small></button>'+
+        '<button onclick="openShare(decks['+n+'])">Share with a learner<small>Online deck or PDF link</small></button>'+
       '</div></span></div></article>';
   });
   $('grid').innerHTML = html || (decks.length ? '<p class="state" style="width:100%">No deck matches your search.</p>' : '<p class="state" style="width:100%">No decks yet. Add a row to the Contents tab of the sheet.</p>');
@@ -412,9 +413,20 @@ document.addEventListener('click', closeMenus);
 
 /* ---------- Routing (#deck=Tab name links straight to a deck) ---------- */
 function findDeck(tab){ for(var i=0;i<allDecks.length;i++) if(allDecks[i].tab===tab) return allDecks[i]; return null; }
+function studyTab(){ return qParam('study'); }
 function route(){
-  var lt=learnerTab();
+  var lt=learnerTab(), st=studyTab();
   if(lt && !location.hash) return showLearner(lt);
+  if(st){
+    var sd=findDeck(st);
+    $('topNav').style.display='none'; $('backBtn').style.display='none';
+    $('shareBtn').style.display='none';
+    if(sd) return showDeck(sd);
+    $('home').className='hidden'; $('study').className=''; $('deckTitle').textContent='Deck not found';
+    $('modeCards').className='hidden'; $('modeList').className='hidden';
+    $('studyState').className='err'; $('studyState').innerHTML='This deck was not found. Please ask your trainer for a new link.';
+    return;
+  }
   var m=/deck=([^&]+)/.exec(location.hash);
   if(m){
     var d=findDeck(decodeURIComponent(m[1]));
@@ -426,6 +438,7 @@ window.onhashchange=function(){ if(decks.length) route(); };
 function goHome(){ if(location.hash) location.hash=''; else showHome(); }
 function openDeck(n){ location.hash='deck='+encodeURIComponent(decks[n].tab); }
 function showHome(){
+  if(studyTab()) return;
   if(learnerTab()){ location.href=location.pathname+(/[?&]sheet=/.test(location.search)?'?sheet='+sheetId():''); return; }
   $('home').className=''; $('study').className='hidden'; $('learner').className='learner hidden'; window.scrollTo(0,0);
 }
@@ -596,7 +609,7 @@ function showLearner(tab){
   document.title=deck.title+' | Your vocabulary';
   $('lTitle').textContent=deck.title;
   $('lDesc').textContent=deck.desc||'';
-  $('lStudy').href='#deck='+encodeURIComponent(deck.tab);
+  $('lStudy').href='?study='+encodeURIComponent(deck.tab)+(/[?&]sheet=/.test(location.search)?'&sheet='+sheetId():'');
   var layout=qParam('layout')==='cards'?'cards':'list';
   loadDeck(deck, function(cards, err){
     if(!cards || !cards.length){ showLearnerError('This vocabulary list is empty or could not be loaded. Please try again later.'); return; }
@@ -731,15 +744,17 @@ function openShare(deck){ closeMenus(); shareDeck=deck; $('shDeck').textContent=
 function closeShare(){ $('shareOverlay').className='overlay hidden'; }
 function shareLayout(){ var r=document.getElementsByName('shLayout'); for(var i=0;i<r.length;i++) if(r[i].checked) return r[i].value; return 'list'; }
 function shareUrl(){
-  var base=location.protocol+'//'+location.host+location.pathname, q='?pdf='+encodeURIComponent(shareDeck.tab);
-  if(shareLayout()==='cards') q+='&layout=cards';
+  var base=location.protocol+'//'+location.host+location.pathname, lay=shareLayout();
+  var q=(lay==='study'?'?study=':'?pdf=')+encodeURIComponent(shareDeck.tab);
+  if(lay==='cards') q+='&layout=cards';
   if(/[?&]sheet=/.test(location.search)) q+='&sheet='+sheetId();
   return base+q;
 }
 function updateShare(){
-  var u=shareUrl(), t=shareDeck.title;
+  var u=shareUrl(), t=shareDeck.title, study=shareLayout()==='study';
   $('shLink').value=u; $('shTest').href=u;
-  $('shMail').href='mailto:?subject='+encodeURIComponent('Your vocabulary: '+t)+'&body='+encodeURIComponent('Hello,\n\nHere is the vocabulary from our session ('+t+'). Open this link to download it as a PDF:\n'+u+'\n\nSee you soon!');
+  var line=study?'Open this link to study it as flashcards on your phone, tablet or computer:':'Open this link to download it as a PDF:';
+  $('shMail').href='mailto:?subject='+encodeURIComponent('Your vocabulary: '+t)+'&body='+encodeURIComponent('Hello,\n\nHere is the vocabulary from our session ('+t+'). '+line+'\n'+u+'\n\nSee you soon!');
 }
 function copyShare(){
   var u=$('shLink').value;
@@ -747,10 +762,11 @@ function copyShare(){
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(u).then(done, legacy); } else legacy();
   function legacy(){ var f=$('shLink'); f.focus(); f.select(); try{ f.setSelectionRange(0,9999); }catch(e){} try{ if(document.execCommand('copy')) done(); else $('shOk').textContent='Select the link above and copy it.'; }catch(e){ $('shOk').textContent='Select the link above and copy it.'; } }
 }
-function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+shareDeck.title, text:'Download the vocabulary from our session as a PDF:', url:shareUrl()}); }catch(e){} }
+function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+shareDeck.title, text:shareLayout()==='study'?'Study the vocabulary from our session:':'Download the vocabulary from our session as a PDF:', url:shareUrl()}); }catch(e){} }
 document.addEventListener('keydown', function(e){ if(e.keyCode===27) closeShare(); });
 
 if(learnerTab() && !location.hash){ $('home').className='hidden'; $('learner').className='learner'; $('topNav').style.display='none'; }
+if(studyTab()){ $('home').className='hidden'; $('study').className=''; $('topNav').style.display='none'; $('backBtn').style.display='none'; $('shareBtn').style.display='none'; }
 loadContents();
 </script>
 </body>
