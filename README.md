@@ -57,3 +57,7 @@ If you change `Code.gs` later: **Deploy › Manage deployments › Edit › Vers
 ## Publishing
 
 `.github/workflows/pages.yml` deploys the site on every push to `main`. In Settings → Pages, Source must be "GitHub Actions".
+
+## Inside the Emerald Tools Android app
+
+The Emerald Tools app (repository Emerald-tools) opens this site inside the app. When `window.EmeraldAndroid` exists, the page hands file downloads (PDF, CSV, Anki, Quizlet) to Android's "save as" screen, prints through Android printing, shares links through Android's share sheet, and shows a "← Tools" link back to the other tools. In a normal browser nothing changes.

@@ -19,6 +19,13 @@ var CONTENTS_TAB = "Contents";
 var PACKS_TAB = "Packs";
 /* Web app URL of the save script (apps-script/Code.gs). Teachers can also paste it in Teachers › Setup. */
 var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTpp_kTjPR02pcsL98GFcERNZUj117r9DABhABPrZA9uJQr4X97seuGAR7csIArkYl/exec";
+/* Inside the Emerald Tools Android app, window.EmeraldAndroid saves files, prints and shares for the page. */
+var APP = window.EmeraldAndroid || null;
+function b64utf8(t){ return btoa(unescape(encodeURIComponent(t))); }
+function savePdfDoc(doc, name){
+  if(APP && APP.saveFile){ var d=doc.output('datauristring'); APP.saveFile(name, 'application/pdf', d.slice(d.indexOf(',')+1)); }
+  else doc.save(name);
+}
 </script>
 <style>
 :root{
@@ -718,6 +725,7 @@ function downloadDeck(deck, kind){
   });
 }
 function save(text, name, mime){
+  if(APP && APP.saveFile){ APP.saveFile(name, mime, b64utf8(text)); return; }
   var blob=new Blob([text],{type:mime});
   if(window.navigator.msSaveOrOpenBlob) return window.navigator.msSaveOrOpenBlob(blob,name);
   var url=URL.createObjectURL(blob), a=document.createElement('a');
@@ -750,7 +758,7 @@ function printDeck(deck){
     }
     $('printArea').innerHTML=html;
     var old=document.title; document.title=fileName(deck,'pdf').replace(/\.pdf$/,'');
-    setTimeout(function(){ window.print(); document.title=old; }, 300);
+    setTimeout(function(){ if(APP && APP.print) APP.print(document.title); else window.print(); document.title=old; }, 300);
   });
 }
 
@@ -778,7 +786,7 @@ function showLearner(tab){
       $('lStatus').className='state'; $('lStatus').style.padding='4px';
       $('lStatus').innerHTML=cards.length+' words · ready to download';
       $('lBtn').className='btn'; $('lStudy').className='alt';
-      if(!/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)){ try{ savePdf(); }catch(x){} }
+      if(!APP && !/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)){ try{ savePdf(); }catch(x){} }
     });
   });
 }
@@ -786,7 +794,7 @@ function showLearnerError(msg){
   only('learner');
   $('lStatus').className='err'; $('lStatus').innerHTML=esc(msg);
 }
-function savePdf(){ if(pdfDoc) pdfDoc.save(pdfName); }
+function savePdf(){ if(pdfDoc) savePdfDoc(pdfDoc, pdfName); }
 
 /* Loaders */
 function loadScriptFrom(urls, i, ok, fail){
@@ -916,7 +924,7 @@ function pdfCards(doc, deck, cards, a){
 var shareDeck=null, sharePack=null;
 function openShare(deck){ closeMenus(); shareDeck=deck; sharePack=null; $('shTitle').textContent='Share with a learner'; $('shDeck').textContent=deck.title; $('shOpts').style.display=''; openShareBox(); }
 function openSharePack(pk){ sharePack=pk; shareDeck=null; $('shTitle').textContent='Share this pack'; $('shDeck').textContent=pk.title+(pk.learner?' · for '+pk.learner:''); $('shOpts').style.display='none'; openShareBox(); }
-function openShareBox(){ $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=navigator.share?'btn ghost':'btn ghost hidden'; updateShare(); }
+function openShareBox(){ $('shOk').textContent=''; $('shareOverlay').className='overlay'; $('shNative').className=(navigator.share||(APP&&APP.share))?'btn ghost':'btn ghost hidden'; updateShare(); }
 function closeShare(){ $('shareOverlay').className='overlay hidden'; }
 function shareLayout(){ var r=document.getElementsByName('shLayout'); for(var i=0;i<r.length;i++) if(r[i].checked) return r[i].value; return 'list'; }
 function siteBase(){ return location.protocol+'//'+location.host+location.pathname; }
@@ -944,7 +952,7 @@ function copyShare(){
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(u).then(done, legacy); } else legacy();
   function legacy(){ var f=$('shLink'); f.focus(); f.select(); try{ f.setSelectionRange(0,9999); }catch(e){} try{ if(document.execCommand('copy')) done(); else $('shOk').textContent='Select the link above and copy it.'; }catch(e){ $('shOk').textContent='Select the link above and copy it.'; } }
 }
-function nativeShare(){ try{ navigator.share({title:'Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), text:shareText(), url:shareUrl()}); }catch(e){} }
+function nativeShare(){ if(APP && APP.share){ APP.share('Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), shareText()+'\n'+shareUrl()); return; } try{ navigator.share({title:'Your vocabulary: '+(sharePack?sharePack.title:shareDeck.title), text:shareText(), url:shareUrl()}); }catch(e){} }
 document.addEventListener('keydown', function(e){ if(e.keyCode===27) closeShare(); });
 
 /* ---------- Teacher area (PIN) ---------- */
@@ -1193,7 +1201,7 @@ function packPdf(){
         $('pkAll').disabled=false;
         if(!doc){ $('pkAllMsg').className='msg bad'; $('pkAllMsg').textContent='The PDF could not be prepared ('+e+').'; return; }
         $('pkAllMsg').textContent='';
-        doc.save(curPack.title.replace(/[\\\/:*?"<>|]/g,'')+'.pdf');
+        savePdfDoc(doc, curPack.title.replace(/[\\\/:*?"<>|]/g,'')+'.pdf');
       });
     });
   });
@@ -1206,6 +1214,10 @@ if(learnerMode()){
   else if(learnerTab()) only('learner');
   else only('packView');
 } else if(location.hash==='#teacher') only('teacher');
+if(APP){ /* way back to the other Emerald tools */
+  var toolsLink=document.createElement('a'); toolsLink.textContent='\u2190 Tools'; toolsLink.href='https://appassets.androidplatform.net/assets/index.html';
+  $('topNav').insertBefore(toolsLink, $('topNav').firstChild);
+}
 loadContents();
 </script>
 </body>
