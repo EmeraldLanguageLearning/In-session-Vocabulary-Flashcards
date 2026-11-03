@@ -1459,7 +1459,7 @@ function renderHomePacks(){
     packs.forEach(function(p){
       if((p.category||'General')!==c) return;
       var n=p.decks.filter(function(t){ return findDeck(t); }).length;
-      html+='<article class="deck"><div class="circ">'+catIcon(c, k++)+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+esc(c)+' · '+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
+      html+='<article class="deck"><div class="circ">'+catIcon(c+' '+p.title, k++)+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+esc(c)+' · '+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
         '<a class="btn" href="#pack='+encodeURIComponent(p.id)+'">Open</a></div></article>';
     });
   });
