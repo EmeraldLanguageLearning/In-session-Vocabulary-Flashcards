@@ -195,7 +195,7 @@ h1.sec{font-family:var(--font-head);font-weight:300;text-transform:uppercase;col
 .hometabs{display:flex;justify-content:center;gap:26px;border-bottom:1px solid var(--line);margin:0 0 30px}
 .hometabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 2px;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:-1px;font-size:1rem}
 .hometabs button.on{color:var(--emerald-link);border-bottom-color:var(--emerald)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px}
 .chips button{border:1px solid var(--emerald);background:#fff;color:var(--emerald-dark);border-radius:16px;padding:5px 14px;cursor:pointer;font-size:.88rem}
 .chips button.on{background:var(--emerald);color:#fff}
 .catsec{width:100%;font-family:var(--font-head);font-weight:400;text-transform:uppercase;color:var(--emerald-dark);letter-spacing:.04em;margin:46px 14px 4px;font-size:1.2rem}
@@ -1447,14 +1447,14 @@ function renderHomePacks(){
   cats.sort(function(a,b){ var ia=DEFAULT_CATS.indexOf(a), ib=DEFAULT_CATS.indexOf(b); ia=ia<0?99:ia; ib=ib<0?99:ib; return ia-ib || (a<b?-1:1); });
   if(packCat && !seen[packCat]) packCat='';
   $('pkChips').innerHTML=cats.length>1 ? ['<button class="'+(packCat?'':'on')+'" onclick="setPackCat(\'\')">All</button>'].concat(cats.map(function(c){ return '<button class="'+(packCat===c?'on':'')+'" data-c="'+esc(c)+'" onclick="setPackCat(this.getAttribute(\'data-c\'))">'+esc(c)+'</button>'; })).join('') : '';
+  /* one continuous grid, sorted by category; the category is shown on each card */
   var html='', k=0;
   cats.forEach(function(c){
     if(packCat && c!==packCat) return;
-    html+='<h2 class="catsec">'+esc(c)+'</h2>';
     packs.forEach(function(p){
       if((p.category||'General')!==c) return;
       var n=p.decks.filter(function(t){ return findDeck(t); }).length;
-      html+='<article class="deck"><div class="circ">'+ICONS[(k++)%ICONS.length]+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
+      html+='<article class="deck"><div class="circ">'+ICONS[(k++)%ICONS.length]+'</div><h2>'+esc(p.title)+'</h2><div class="meta">'+esc(c)+' · '+n+' deck'+(n===1?'':'s')+'</div><p>'+esc(p.message)+'</p><div class="acts">'+
         '<a class="btn" href="#pack='+encodeURIComponent(p.id)+'">Open</a></div></article>';
     });
   });
