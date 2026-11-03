@@ -43,6 +43,7 @@ The PIN on the page only keeps learners out of the menu. The save script checks 
 
 1. Open the Google Sheet › **Extensions › Apps Script**.
 2. Delete the sample code, paste the contents of [`apps-script/Code.gs`](apps-script/Code.gs), click **Save**.
+   Then choose **setup** in the function menu next to **Run**, click **Run** and allow access. The log should say `Contents tab found: true`. (The script opens the flashcards sheet by its ID, set in `SHEET_ID`.)
 3. **Deploy › New deployment** › type **Web app**. *Execute as:* **Me**. *Who has access:* **Anyone**. Click **Deploy**, then **Authorize access** and allow it (Google shows an "unverified app" warning for your own scripts: **Advanced › Go to … (unsafe)**).
 4. Copy the **Web app URL** (ends in `/exec`).
 5. On the site: **Teachers › Setup**, paste the URL, **Save and test**. To connect every device at once, put the URL in `SCRIPT_URL` near the top of `index.html`.
