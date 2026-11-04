@@ -70,3 +70,7 @@ If you change `Code.gs` later: **Deploy › Manage deployments › Edit › Vers
 ## Inside the Emerald Tools Android app
 
 The Emerald Tools app (repository Emerald-tools) opens this site inside the app. When `window.EmeraldAndroid` exists, the page hands file downloads (PDF, CSV, Anki, Quizlet) to Android's "save as" screen, prints through Android printing, shares links through Android's share sheet, and shows a "← Tools" link back to the other tools. In a normal browser nothing changes.
+
+## Licence
+
+© 2026 Emerald Language Learning. Licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (see [LICENSE](LICENSE)): you may copy, fork and adapt it for individual, non-commercial use with credit, but **commercial use is not allowed** without written permission. Third-party material (photos, icons, map or dictionary data) keeps its own licence.
